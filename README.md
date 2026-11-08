@@ -15,6 +15,16 @@
   <img alt="Read-only" src="https://img.shields.io/badge/CareLink-read--only-teal">
 </p>
 
+<p align="center">
+  <a href="https://github.com/tixastronauta/carelink-menubar/releases/latest/download/CareLink-Menubar.dmg"><b>⬇ Download for Mac</b></a>
+  &nbsp;·&nbsp;
+  <a href="https://tixastronauta.github.io/carelink-menubar/">Website</a>
+  &nbsp;·&nbsp;
+  <a href="#install">How to install</a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/tixastronauta/carelink-menubar/releases">All releases</a>
+</p>
+
 > [!IMPORTANT]
 > **Unofficial and read-only.** CareLink Menubar is not affiliated with, endorsed by or supported
 > by Medtronic. It only reads data that CareLink already shows you; it never sends commands to a
@@ -59,9 +69,26 @@
 - Developed and validated with a MiniMed Flex on a European account. Other pumps, regions,
   mmol/L accounts and MFA have not been verified.
 
-## Build and run
+## Install
 
-There are no prebuilt releases yet. Build from source with the Xcode command line tools:
+1. Download **[CareLink-Menubar.dmg](https://github.com/tixastronauta/carelink-menubar/releases/latest/download/CareLink-Menubar.dmg)** (macOS 14 or later, Apple Silicon and Intel).
+2. Open it and drag **CareLink Menubar** onto **Applications**.
+3. Open the app from Applications. macOS says it cannot verify the app, because this free build is
+   not notarized by Apple. Click **Done**.
+4. Open **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to
+   CareLink Menubar. You only do this once per version.
+
+The app appears in the menu bar. Accept the consent screen and sign in on the official CareLink
+page; the app never sees or stores your password. To add the desktop widget, right-click the
+desktop → **Edit Widgets…** and search for "CareLink".
+
+> [!NOTE]
+> Release builds made by GitHub Actions without a signing certificate are ad-hoc signed and do not
+> include the desktop widget. Build from source with an Apple Development identity to get it.
+
+## Build from source
+
+Build with the Xcode command line tools:
 
 ```sh
 git clone https://github.com/tixastronauta/carelink-menubar.git
@@ -76,8 +103,7 @@ Python is only used by the build script; the app itself has no runtime dependenc
   Xcode), otherwise ad-hoc. The desktop widget needs a Team ID, so ad-hoc builds skip it.
 - Set `CARELINK_SIGN_IDENTITY` to choose another identity (for example a Developer ID).
 
-On first launch the app asks for consent, then you sign in on the official CareLink page in a
-system web sheet. The app never sees or stores your password.
+`tools/make-dmg.sh` packages the built app into `build/CareLink-Menubar.dmg`.
 
 ## Privacy and security
 
@@ -100,7 +126,9 @@ CareLink fields are used and how each was validated.
 | Path | Contents |
 | ---- | -------- |
 | `macos/` | The app, widget extension and synthetic check programs (Swift/SwiftUI, no Xcode project) |
-| `tools/` | Build script, icon and screenshot generators, translation check |
+| `tools/` | Build and DMG scripts, icon and screenshot generators, translation check |
+| `site/` | The public website, published to GitHub Pages by `.github/workflows/pages.yml` |
+| `.github/` | Release and website workflows, release notes template |
 | `assets/` | App icon and README screenshots |
 | `docs/` | [User and developer guide](docs/GUIDE.md) and [project history](docs/HISTORY.md) |
 | `carelink_proto/`, `tests/` | The earlier Python prototype and its tests, kept for reference (needs the upstream client checked out in `vendor/`, not included) |

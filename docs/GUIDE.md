@@ -15,6 +15,7 @@ User and developer reference for CareLink Menubar 0.3. For a quick overview see 
 - [Validation status and known limitations](#validation-status-and-known-limitations)
 - [Development](#development)
 - [Distribution](#distribution)
+- [Releases and website](#releases-and-website)
 
 ## First run
 
@@ -289,3 +290,42 @@ xcrun swiftc tools/make-icon.swift -o build/make-icon && build/make-icon assets
   notarization. The App Store is not needed. Do not disable Gatekeeper to work around this.
 - **AGPL-3.0:** keep the source available and the attributions intact when redistributing. Each
   bundle includes `LICENSE`, `NOTICE.txt` and `Source.tar.gz`.
+
+## Releases and website
+
+### Publishing a release
+
+1. Update the version in `tools/build-menubar.py` (`CFBundleShortVersionString` and
+   `CFBundleVersion`) and the notes in `.github/release-notes.md` if needed.
+2. Commit, then tag and push: `git tag -a v0.3.1 -m "CareLink Menubar 0.3.1" && git push origin v0.3.1`.
+3. `.github/workflows/release.yml` then runs on a macOS runner:
+   - builds the app;
+   - packages `CareLink-Menubar.dmg` and its SHA-256;
+   - creates the GitHub release with the install notes.
+4. The asset always has the same name, so `https://github.com/tixastronauta/carelink-menubar/releases/latest/download/CareLink-Menubar.dmg` always points to the newest version.
+
+Running the workflow manually ("Run workflow") builds the DMG as a downloadable artifact without
+publishing a release, which is useful for testing.
+
+**Signing in CI:**
+- Without secrets, the build is ad-hoc signed and the desktop widget is left out.
+- To include the widget, export an Apple Development (or Developer ID) certificate with its private
+  key as `.p12`, then add it as the repository secrets `SIGNING_CERT_P12` (base64) and
+  `SIGNING_CERT_PASSWORD`.
+- This has not been tested yet. A widget signed this way on other Macs is also unverified.
+- Builds are never notarized without a paid Apple Developer membership. Users approve the first
+  launch in System Settings → Privacy & Security → **Open Anyway**.
+
+To build a DMG locally: `python3 tools/build-menubar.py && ./tools/make-dmg.sh`.
+
+### Website
+
+`site/index.html` is a self-contained landing page for end users, with download, features, privacy,
+install steps and FAQ. `.github/workflows/pages.yml` publishes it to `https://tixastronauta.github.io/carelink-menubar/` whenever `site/` or
+`assets/` change on `main`. The workflow copies the icon and screenshots from `assets/`.
+
+- **One-time setup:** repository Settings → Pages → Source: **GitHub Actions**.
+- **Plan limitation:** GitHub Pages needs a paid plan while the repository is private; it is free
+  once the repository is public.
+- **Local preview:** copy `site/` together with `assets/AppIcon-1024.png` and `assets/screenshots`
+  into one folder and open `index.html`.

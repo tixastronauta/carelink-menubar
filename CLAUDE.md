@@ -28,6 +28,9 @@ upstream AGPL client it was derived from.
 # CARELINK_SIGN_IDENTITY overrides. Without a Team ID each rebuild re-prompts once.
 python3 tools/build-menubar.py
 
+# Package build/CareLink-Menubar.dmg (releases: push a v* tag; see docs/GUIDE.md)
+./tools/make-dmg.sh
+
 # Regenerate the app icon (assets/AppIcon.icns, committed; the build only copies it)
 xcrun swiftc tools/make-icon.swift -o build/make-icon && build/make-icon assets
 
