@@ -1,0 +1,102 @@
+import Foundation
+import os
+
+/// Latest-reading summary shared between the app (writer) and the widget extension (reader)
+/// through the App Group container. Written only after consent; one file, overwritten on every
+/// refresh and deleted on logout, consent withdrawal or when sharing is turned off.
+/// Contains health data, never tokens. New fields are optional so older files still decode.
+struct WidgetSummary: Codable, Equatable {
+    var glucoseText: String
+    var unit: String
+    var trendSymbol: String
+    var readingDate: Date?
+    /// "in", "low", "veryLow", "high" for colouring; nil when the reading was already old.
+    var range: String?
+    var updated: Date
+    /// "pt" or "en": the app's language, so the widget matches it.
+    var language: String? = nil
+    /// Readings of the last 3 h in the display unit, oldest first.
+    var points: [WidgetPoint]? = nil
+    /// Target range in the display unit, for the chart band.
+    var targetLow: Double? = nil
+    var targetHigh: Double? = nil
+    /// CareLink's 24 h time in range, in %.
+    var timeInRange: Double? = nil
+    var timeBelow: Double? = nil
+    var timeAbove: Double? = nil
+    /// Large widget extras (same values as the panel).
+    var activeInsulin: Double? = nil
+    var reservoirUnits: Double? = nil
+    var pumpBatteryPercent: Double? = nil
+    var infusionMinutesLeft: Double? = nil
+    var infusionChange: Bool? = nil
+    var sensorHoursLeft: Double? = nil
+}
+
+struct WidgetPoint: Codable, Equatable {
+    var date: Date
+    var value: Double
+}
+
+enum WidgetTimeline {
+    /// One entry per minute so the reading age stays current without new data.
+    static func entryDates(start: Date, minutes: Int = 60) -> [Date] {
+        (0..<minutes).map { start.addingTimeInterval(Double($0) * 60) }
+    }
+    /// Same rule as the app: older than 15 min, missing or more than 5 min in the future.
+    static func isStale(_ summary: WidgetSummary, at date: Date) -> Bool {
+        guard let reading = summary.readingDate else { return true }
+        let age = date.timeIntervalSince(reading)
+        return age > 900 || age < -300
+    }
+    /// Applies the language the app was using when it wrote the summary.
+    static func applyLanguage(of summary: WidgetSummary?) {
+        switch summary?.language {
+        case "en": L10n.choice = .english
+        case "pt": L10n.choice = .portuguese
+        default: L10n.choice = .system
+        }
+    }
+}
+
+enum SharedStore {
+    /// App Group ID (Team-ID prefixed), injected into both Info.plists by the build script.
+    static var groupID: String? { Bundle.main.object(forInfoDictionaryKey: "CareLinkAppGroup") as? String }
+    /// URL the widget opens on click; the app shows its panel.
+    static let openURL = URL(string: "carelinkmenu://open")!
+
+    static var fileURL: URL? {
+        guard let groupID, !groupID.isEmpty,
+              let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupID)
+        else { return nil }
+        return container.appendingPathComponent("widget-summary.json")
+    }
+
+    /// Status only (never values): helps diagnose the app/widget hand-off.
+    static let log = Logger(subsystem: "local.tcx.carelink.menu", category: "widget")
+
+    static func write(_ summary: WidgetSummary) {
+        guard let url = fileURL else { log.error("widget summary not written: no group container"); return }
+        do {
+            // `.atomic` stages the file outside the group container, which macOS refuses here.
+            // Write a temp file next to it and rename(2) it over the old one (atomic on one volume).
+            let temp = url.deletingLastPathComponent().appendingPathComponent(".widget-summary.tmp")
+            try JSONEncoder().encode(summary).write(to: temp)
+            try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: temp.path)
+            guard rename(temp.path, url.path) == 0 else { throw CocoaError(.fileWriteUnknown) }
+            log.info("widget summary written")
+        } catch {
+            log.error("widget summary write failed: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    static func read() -> WidgetSummary? {
+        guard let url = fileURL, let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(WidgetSummary.self, from: data)
+    }
+
+    static func delete() {
+        guard let url = fileURL else { return }
+        try? FileManager.default.removeItem(at: url)
+    }
+}
