@@ -68,3 +68,11 @@ Built in close iteration with daily use. Highlights:
 - **Name:** the app was renamed from "CareLink Menu" to **CareLink Menubar** before going public.
   Internal identifiers (`local.tcx.carelink.menu`, the Keychain service and the App Group) keep the
   old name, so existing installs keep their session, consent and widget.
+
+## 0.3.1: first public release
+
+- **Distribution:** a downloadable `CareLink-Menubar.dmg` on GitHub Releases, built by a GitHub
+  Actions workflow with the desktop widget included, plus an end-user website on GitHub Pages.
+- **Naming:** the company is now referred to as MiniMed (formerly Medtronic Diabetes).
+- **Compatibility:** a few long SwiftUI and key-building expressions were split so older Swift
+  compilers can type-check them.
