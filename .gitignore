@@ -14,6 +14,7 @@ data/
 output/
 *.html
 !docs/*.html
+!site/*.html
 vendor/
 build/
 .DS_Store

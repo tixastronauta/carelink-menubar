@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CareLink Menubar: your glucose in the Mac menu bar</title>
+  <meta name="description" content="See your Medtronic CareLink glucose, trend and time in range right in the Mac menu bar and on your desktop. Free, private and read-only.">
+  <meta property="og:title" content="CareLink Menubar">
+  <meta property="og:description" content="Your glucose, one glance away. Free for macOS.">
+  <meta property="og:image" content="assets/screenshots/panel-dark.png">
+  <link rel="icon" href="assets/AppIcon-1024.png">
+  <style>
+    :root {
+      --teal: #148591;
+      --teal-strong: #0b6470;
+      --bg: #f6f8f9;
+      --surface: #ffffff;
+      --text: #14181b;
+      --muted: #5c666d;
+      --border: rgba(20, 24, 27, 0.08);
+      --shadow: 0 24px 60px rgba(11, 70, 80, 0.16);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1214;
+        --surface: #181d20;
+        --text: #eef2f3;
+        --muted: #9aa5ab;
+        --border: rgba(255, 255, 255, 0.08);
+        --shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+      }
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--teal); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+    /* Navigation */
+    nav { position: sticky; top: 0; z-index: 10; backdrop-filter: saturate(180%) blur(16px);
+          background: color-mix(in srgb, var(--bg) 82%, transparent); border-bottom: 1px solid var(--border); }
+    nav .wrap { display: flex; align-items: center; gap: 24px; height: 60px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--text); }
+    .brand img { width: 30px; height: 30px; }
+    nav .links { margin-left: auto; display: flex; gap: 22px; font-size: 15px; }
+    nav .links a { color: var(--muted); }
+    nav .links a:hover { color: var(--text); text-decoration: none; }
+
+    /* Hero */
+    .hero { padding: 72px 0 40px; text-align: center;
+            background: radial-gradient(1200px 500px at 50% -10%, color-mix(in srgb, var(--teal) 22%, transparent), transparent 70%); }
+    .hero img.icon { width: 112px; height: 112px; filter: drop-shadow(0 12px 24px rgba(11, 70, 80, 0.3)); }
+    h1 { font-size: clamp(36px, 6vw, 60px); line-height: 1.08; letter-spacing: -0.02em; margin: 22px 0 16px; }
+    .lead { font-size: clamp(18px, 2.3vw, 21px); color: var(--muted); max-width: 680px; margin: 0 auto 30px; }
+    .cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; gap: 10px; padding: 14px 26px; border-radius: 999px;
+           font-weight: 600; font-size: 17px; border: 1px solid transparent; }
+    .btn:hover { text-decoration: none; transform: translateY(-1px); }
+    .btn-primary { background: var(--teal); color: #fff; box-shadow: 0 10px 24px color-mix(in srgb, var(--teal) 40%, transparent); }
+    .btn-primary:hover { background: var(--teal-strong); }
+    .btn-secondary { background: var(--surface); color: var(--text); border-color: var(--border); }
+    .fineprint { font-size: 14px; color: var(--muted); margin-top: 14px; }
+    .hero-shot { margin: 48px auto 0; max-width: 470px; }
+    .hero-shot img { width: 100%; border-radius: 22px; box-shadow: var(--shadow); }
+
+    /* Trust strip */
+    .trust { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin: 44px 0 8px; }
+    .pill { padding: 8px 16px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border);
+            font-size: 14px; color: var(--muted); }
+    .pill b { color: var(--text); font-weight: 600; }
+
+    /* Sections */
+    section { padding: 72px 0; }
+    h2 { font-size: clamp(28px, 4vw, 40px); letter-spacing: -0.015em; margin: 0 0 12px; text-align: center; }
+    .section-lead { text-align: center; color: var(--muted); font-size: 18px; max-width: 640px; margin: 0 auto 44px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 26px; }
+    .card .emoji { font-size: 28px; }
+    .card h3 { margin: 12px 0 6px; font-size: 19px; }
+    .card p { margin: 0; color: var(--muted); }
+
+    .widgets { display: flex; gap: 22px; justify-content: center; align-items: flex-start; flex-wrap: wrap; }
+    .widgets img { border-radius: 26px; box-shadow: var(--shadow); max-width: 100%; }
+    .widgets .stack { display: flex; flex-direction: column; gap: 22px; align-items: center; }
+
+    .privacy { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+    .privacy .card h3 { font-size: 17px; }
+
+    /* Install */
+    .steps { counter-reset: step; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+    .step { position: relative; padding-top: 58px; }
+    .step::before { counter-increment: step; content: counter(step); position: absolute; top: 22px; left: 26px;
+                    width: 30px; height: 30px; border-radius: 50%; background: var(--teal); color: #fff;
+                    display: grid; place-items: center; font-weight: 700; font-size: 15px; }
+    .note { margin: 26px auto 0; max-width: 760px; padding: 18px 22px; border-radius: 16px; font-size: 15px;
+            background: color-mix(in srgb, var(--teal) 10%, var(--surface)); border: 1px solid color-mix(in srgb, var(--teal) 25%, transparent); }
+
+    /* FAQ */
+    details { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px 22px; margin: 0 auto 12px; max-width: 760px; }
+    summary { cursor: pointer; font-weight: 600; font-size: 17px; }
+    details p { color: var(--muted); margin: 12px 0 0; }
+
+    .final { text-align: center; }
+    footer { border-top: 1px solid var(--border); padding: 34px 0 48px; color: var(--muted); font-size: 14px; }
+    footer .wrap { display: grid; gap: 10px; }
+    @media (max-width: 640px) { nav .links a:not(.gh) { display: none; } section { padding: 56px 0; } }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="wrap">
+      <a class="brand" href="#"><img src="assets/AppIcon-1024.png" alt=""> CareLink Menubar</a>
+      <div class="links">
+        <a href="#features">Features</a>
+        <a href="#privacy">Privacy</a>
+        <a href="#install">Install</a>
+        <a href="#faq">FAQ</a>
+        <a class="gh" href="https://github.com/tixastronauta/carelink-menubar">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="wrap">
+      <img class="icon" src="assets/AppIcon-1024.png" alt="CareLink Menubar icon">
+      <h1>Your glucose,<br>one glance away.</h1>
+      <p class="lead">CareLink Menubar puts your Medtronic CareLink readings in the Mac menu bar and on
+        your desktop, so you can stay focused on your work without reaching for your phone.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="https://github.com/tixastronauta/carelink-menubar/releases/latest/download/CareLink-Menubar.dmg">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+          Download for Mac
+        </a>
+        <a class="btn btn-secondary" href="#install">How to install</a>
+      </div>
+      <p class="fineprint">Free and open source · macOS 14 or later · Apple Silicon and Intel</p>
+      <div class="hero-shot"><img src="assets/screenshots/panel-dark.png" alt="The CareLink Menubar panel with glucose, time in range, consumables and a 24-hour chart"></div>
+      <div class="trust">
+        <span class="pill"><b>Read-only</b>: never controls your pump</span>
+        <span class="pill"><b>Private</b>: your data stays on your Mac</span>
+        <span class="pill"><b>Free</b>: open source, no account fees</span>
+      </div>
+    </div>
+  </header>
+
+  <section id="features">
+    <div class="wrap">
+      <h2>Everything you check, without the checking</h2>
+      <p class="section-lead">The numbers you look at most, always visible, with gentle colour cues when something needs your attention.</p>
+      <div class="grid">
+        <div class="card"><div class="emoji">👀</div><h3>Always in view</h3>
+          <p>Your current glucose and trend arrow live in the menu bar, with a small chart of the last three hours. Orange or red when you're out of range.</p></div>
+        <div class="card"><div class="emoji">🎯</div><h3>Time in range at a glance</h3>
+          <p>See your last 24 hours in range, below and above, plus your average, variability and GMI, in one clear card.</p></div>
+        <div class="card"><div class="emoji">⏳</div><h3>Know when to change</h3>
+          <p>Reservoir, pump battery, infusion set and sensor time left. They turn orange and then red as the change gets close.</p></div>
+        <div class="card"><div class="emoji">🧩</div><h3>Desktop widgets</h3>
+          <p>Three widget sizes for your desktop, with your real recent trend drawn behind the number.</p></div>
+        <div class="card"><div class="emoji">📸</div><h3>Share in one click</h3>
+          <p>Copy a clean picture of your current status and paste it into a message to your care team or family.</p></div>
+        <div class="card"><div class="emoji">🔔</div><h3>Helpful reminders</h3>
+          <p>Optional notifications when your sensor or infusion set is ending, or when new readings stop arriving.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="widgets">
+    <div class="wrap">
+      <h2>Beautiful on your desktop</h2>
+      <p class="section-lead">Pick the size that fits your workflow. Click any widget to open the full panel.</p>
+      <div class="widgets">
+        <div class="stack">
+          <img src="assets/screenshots/widget-small.png" width="200" alt="Small widget">
+          <img src="assets/screenshots/widget-medium.png" width="392" alt="Medium widget">
+        </div>
+        <img src="assets/screenshots/widget-large.png" width="392" alt="Large widget">
+      </div>
+    </div>
+  </section>
+
+  <section id="privacy">
+    <div class="wrap">
+      <h2>Your data stays with you</h2>
+      <p class="section-lead">Built for people who care about their health data as much as we do.</p>
+      <div class="privacy">
+        <div class="card"><h3>🔒 Official sign-in</h3><p>You sign in on Medtronic's own CareLink page. The app never sees or stores your password.</p></div>
+        <div class="card"><h3>🔑 Keychain only</h3><p>Your session is kept in the macOS Keychain on your Mac, not in files.</p></div>
+        <div class="card"><h3>🚫 No tracking</h3><p>No analytics, no ads and no servers of ours. The app talks only to CareLink.</p></div>
+        <div class="card"><h3>👁️ Read-only by design</h3><p>It can only read what CareLink already shows you. It cannot change your therapy or your pump.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="wrap">
+      <h2>Install in three steps</h2>
+      <p class="section-lead">It takes about a minute. The extra step on first launch is normal for free apps that are not distributed through Apple.</p>
+      <div class="steps">
+        <div class="card step"><h3>Download and drag</h3>
+          <p>Open <a href="https://github.com/tixastronauta/carelink-menubar/releases/latest/download/CareLink-Menubar.dmg">CareLink-Menubar.dmg</a> and drag the app onto the Applications folder.</p></div>
+        <div class="card step"><h3>Open it once</h3>
+          <p>Open CareLink Menubar from Applications. macOS says it can't verify the app. Click <b>Done</b>.</p></div>
+        <div class="card step"><h3>Allow it</h3>
+          <p>Go to <b>System Settings → Privacy &amp; Security</b>, scroll down and click <b>Open Anyway</b>. Done: the app appears in your menu bar.</p></div>
+      </div>
+      <div class="note"><b>Why the warning?</b> Apple charges developers a yearly fee to "notarize" apps. CareLink Menubar is free and its code is public, so you can see exactly what it does. You only approve it once for each new version.</div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <h2>Questions</h2>
+      <p class="section-lead">Short answers to what people usually ask.</p>
+      <details><summary>Is this an official Medtronic app?</summary>
+        <p>No. CareLink Menubar is an independent, unofficial app and is not affiliated with or endorsed by Medtronic. It reads the same data you can see in CareLink.</p></details>
+      <details><summary>Can it change my pump or my insulin?</summary>
+        <p>No. It is read-only by design: it never sends commands to your pump and never changes your therapy.</p></details>
+      <details><summary>Does it replace my pump or phone alarms?</summary>
+        <p>No. Keep relying on your pump, sensor and the MiniMed app and their alarms. Always confirm values in the official app before making treatment decisions.</p></details>
+      <details><summary>Which accounts and pumps work?</summary>
+        <p>It works with European CareLink accounts (as a patient, or as a care partner with one linked patient). It was developed and tested with a MiniMed Flex. Other pumps and regions may work but haven't been verified yet.</p></details>
+      <details><summary>What do I need?</summary>
+        <p>A Mac with macOS 14 Sonoma or later (Apple Silicon or Intel) and your CareLink login.</p></details>
+      <details><summary>Is it really free?</summary>
+        <p>Yes. It's open source under the GNU AGPL-3.0 license, with no subscriptions and no in-app purchases.</p></details>
+      <details><summary>Where is my data stored?</summary>
+        <p>Only on your Mac. On first launch you're asked for consent. Readings for the widget are stored locally, and you can withdraw consent at any time to delete them and sign out.</p></details>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="wrap">
+      <h2>Ready when you are</h2>
+      <p class="section-lead">Free for macOS 14 or later.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="https://github.com/tixastronauta/carelink-menubar/releases/latest/download/CareLink-Menubar.dmg">Download for Mac</a>
+        <a class="btn btn-secondary" href="https://github.com/tixastronauta/carelink-menubar">View on GitHub</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <div>CareLink Menubar is unofficial and not affiliated with, endorsed by or supported by Medtronic. It is not a medical device. Screenshots show example data.</div>
+      <div>CareLink, MiniMed, SmartGuard and Medtronic are trademarks of their respective owners. Free software under the <a href="https://github.com/tixastronauta/carelink-menubar/blob/main/LICENSE">GNU AGPL-3.0</a>. Source code on <a href="https://github.com/tixastronauta/carelink-menubar">GitHub</a>.</div>
+    </div>
+  </footer>
+</body>
+</html>
