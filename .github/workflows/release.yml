@@ -18,9 +18,17 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+
+      - name: Select the newest stable Xcode
+        # Older Swift compilers give up type-checking some SwiftUI views ("unable to type-check
+        # this expression in reasonable time"); the newest toolchain matches local builds.
+        run: |
+          xcode="$(ls -d /Applications/Xcode_*.app | grep -viE 'beta|rc' | sort -V | tail -1)"
+          sudo xcode-select -s "$xcode"
+          xcrun swiftc --version
 
       - name: Import signing certificate (optional)
         env:

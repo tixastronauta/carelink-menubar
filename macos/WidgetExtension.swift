@@ -232,20 +232,28 @@ struct SummaryContent: View {
                 if let below = summary?.timeBelow { legend(.red, tr("Abaixo"), percent(below)) }
                 if let above = summary?.timeAbove { legend(.orange, tr("Acima"), percent(above)) }
             }
-            GeometryReader { geometry in
-                let segments = [(Color.red, summary?.timeBelow ?? 0), (Color.green, tir), (Color.orange, summary?.timeAbove ?? 0)]
-                    .filter { $0.1 > 0 }
-                let total = segments.reduce(0) { $0 + $1.1 }
-                let width = max(0, geometry.size.width - 2 * CGFloat(max(0, segments.count - 1)))
-                HStack(spacing: 2) {
-                    ForEach(segments.indices, id: \.self) { index in
-                        Capsule().fill(segments[index].0)
-                            .frame(width: total > 0 ? width * segments[index].1 / total : 0)
-                    }
+            rangeBar(tir)
+        }
+    }
+
+    /// Below / in range / above as proportional capsules. Kept apart from `timeInRangeBlock` so older
+    /// Swift compilers can type-check each view in reasonable time.
+    private func rangeBar(_ tir: Double) -> some View {
+        let all: [(color: Color, value: Double)] = [(.red, summary?.timeBelow ?? 0), (.green, tir),
+                                                    (.orange, summary?.timeAbove ?? 0)]
+        let segments = all.filter { $0.value > 0 }
+        let total: Double = segments.reduce(0) { $0 + $1.value }
+        let gaps = CGFloat(max(0, segments.count - 1)) * 2
+        return GeometryReader { (geometry: GeometryProxy) in
+            let width: CGFloat = max(0, geometry.size.width - gaps)
+            HStack(spacing: 2) {
+                ForEach(segments.indices, id: \.self) { (index: Int) in
+                    let share: CGFloat = total > 0 ? CGFloat(segments[index].value / total) : 0
+                    Capsule().fill(segments[index].color).frame(width: width * share)
                 }
             }
-            .frame(height: 6)
         }
+        .frame(height: 6)
     }
 
     private func legend(_ color: Color, _ title: String, _ value: String) -> some View {
