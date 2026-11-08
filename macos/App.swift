@@ -328,11 +328,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
                                     infusionMinutesLeft: snapshot.infusionTimeLeft,
                                     infusionChange: snapshot.infusionWarning != nil,
                                     sensorHoursLeft: snapshot.sensorHoursLeft)
-        let key = [summary.glucoseText, summary.unit, summary.trendSymbol, snapshot.timestamp ?? "", range ?? "-",
-                   summary.language ?? "", "\(recent.count)", "\(target.low)-\(target.high)",
-                   "\(summary.timeInRange ?? -1)", "\(summary.activeInsulin ?? -1)", "\(summary.reservoirUnits ?? -1)",
-                   "\(summary.pumpBatteryPercent ?? -1)", "\(Int((summary.infusionMinutesLeft ?? -1) / 60))",
-                   "\(summary.infusionChange ?? false)", "\(Int(summary.sensorHoursLeft ?? -1))"].joined(separator: "|")
+        // Built in steps: one long array literal times out the type checker on older Swift compilers.
+        var parts: [String] = [summary.glucoseText, summary.unit, summary.trendSymbol]
+        parts.append(snapshot.timestamp ?? "")
+        parts.append(range ?? "-")
+        parts.append(summary.language ?? "")
+        parts.append(String(recent.count))
+        parts.append("\(target.low)-\(target.high)")
+        parts.append(String(describing: summary.timeInRange ?? -1))
+        parts.append(String(describing: summary.activeInsulin ?? -1))
+        parts.append(String(describing: summary.reservoirUnits ?? -1))
+        parts.append(String(describing: summary.pumpBatteryPercent ?? -1))
+        parts.append(String(Int((summary.infusionMinutesLeft ?? -1) / 60)))
+        parts.append(String(summary.infusionChange ?? false))
+        parts.append(String(Int(summary.sensorHoursLeft ?? -1)))
+        let key = parts.joined(separator: "|")
         guard key != widgetKey else { return }
         widgetKey = key
         SharedStore.write(summary)
@@ -375,20 +385,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     /// Things that can change the panel height. Measuring renders the whole chart, so it only
     /// happens when this changes, not on the 5 s clock tick.
     private var layoutSignature: String {
+        // Built in steps: one long array literal times out the type checker on older Swift compilers.
         let snapshot = store.snapshot
-        return [snapshot?.timestamp ?? "-", "\(snapshot?.markers.count ?? 0)", "\(store.isSignedIn)",
-                "\(store.requiresLogin)", "\(store.isSigningIn)", store.errorMessage ?? "-", "\(store.stale)",
-                "\(store.historyHours)", "\(prefs.showTimeInRange)", "\(prefs.showSmartGuard)",
-                "\(prefs.showDeviceStatus)", "\(prefs.showSensorWarnings)", "\(prefs.showConnectionWarnings)",
-                "\(prefs.showGlucoseStats)",
-                // Rows that can appear without a new reading (warm-up, pump suspended, lost link).
-                snapshot?.sensorWarning ?? "-", "\(snapshot?.pumpSuspended ?? false)",
-                snapshot?.connectionWarning ?? "-", "\(snapshot?.timeInRange != nil)",
-                "\(snapshot?.hasDeviceStatus ?? false)", snapshot?.smartGuardText ?? "-",
-                "\(snapshot?.glucoseStats != nil)",
-                "\(snapshot?.sensorLife.rawValue ?? 0)", "\(snapshot?.infusionLife.rawValue ?? 0)",
-                prefs.language.rawValue]
-            .joined(separator: "|")
+        var parts: [String] = [snapshot?.timestamp ?? "-", String(snapshot?.markers.count ?? 0)]
+        parts.append(String(store.isSignedIn))
+        parts.append(String(store.requiresLogin))
+        parts.append(String(store.isSigningIn))
+        parts.append(store.errorMessage ?? "-")
+        parts.append(String(store.stale))
+        parts.append(String(describing: store.historyHours))
+        let toggles: [Bool] = [prefs.showTimeInRange, prefs.showSmartGuard, prefs.showDeviceStatus,
+                               prefs.showSensorWarnings, prefs.showConnectionWarnings, prefs.showGlucoseStats]
+        parts.append(toggles.map { $0 ? "1" : "0" }.joined())
+        // Rows that can appear without a new reading (warm-up, pump suspended, lost link).
+        if let snapshot {
+            parts.append(snapshot.sensorWarning ?? "-")
+            parts.append(String(describing: snapshot.pumpSuspended))
+            parts.append(snapshot.connectionWarning ?? "-")
+            parts.append(String(snapshot.timeInRange != nil))
+            parts.append(String(describing: snapshot.hasDeviceStatus))
+            parts.append(snapshot.smartGuardText ?? "-")
+            parts.append(String(snapshot.glucoseStats != nil))
+            parts.append(String(describing: snapshot.sensorLife.rawValue))
+            parts.append(String(describing: snapshot.infusionLife.rawValue))
+        }
+        parts.append(prefs.language.rawValue)
+        return parts.joined(separator: "|")
     }
     private var lastLayoutSignature = ""
     private lazy var measuringView = NSHostingView(rootView: AnyView(makePopover().content))
