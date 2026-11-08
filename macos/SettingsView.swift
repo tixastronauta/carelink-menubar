@@ -373,7 +373,7 @@ struct AboutSettings: View {
                     Spacer()
                     Link(tr("Projeto original"), destination: URL(string: "https://github.com/ondrej1024/carelink-python-client")!)
                 }
-                Caption(tr("App não oficial, sem afiliação à Medtronic. Apenas leitura: não controla a bomba nem substitui a app MiniMed. Confirma sempre os valores na app oficial."))
+                Caption(tr("App não oficial, sem afiliação à MiniMed (antiga Medtronic Diabetes). Apenas leitura: não controla a bomba nem substitui a app MiniMed. Confirma sempre os valores na app oficial."))
             }
             Section(tr("Consentimento")) {
                 LabeledContent(tr("Aceite em"), value: Consent.acceptedAt.map {

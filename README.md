@@ -5,7 +5,7 @@
 <h1 align="center">CareLink Menubar</h1>
 
 <p align="center">
-  Your glucose from Medtronic CareLink, always one glance away in the macOS menu bar.
+  Your glucose from MiniMed CareLink, always one glance away in the macOS menu bar.
 </p>
 
 <p align="center">
@@ -27,7 +27,7 @@
 
 > [!IMPORTANT]
 > **Unofficial and read-only.** CareLink Menubar is not affiliated with, endorsed by or supported
-> by Medtronic. It only reads data that CareLink already shows you; it never sends commands to a
+> by MiniMed (formerly Medtronic Diabetes). It only reads data that CareLink already shows you; it never sends commands to a
 > pump or changes therapy. It is not a medical device and does not replace your pump, sensor,
 > the MiniMed app or their alarms. Always confirm values in the official app.
 
@@ -115,7 +115,7 @@ Python is only used by the build script; the app itself has no runtime dependenc
   - diagnostic logs, when you turn diagnostics on.
 
   Withdrawing consent deletes these files, signs out and quits.
-- **No telemetry:** no analytics and no third-party servers. The app talks only to Medtronic's
+- **No telemetry:** no analytics and no third-party servers. The app talks only to MiniMed's
   European CareLink endpoints.
 
 See [docs/GUIDE.md](docs/GUIDE.md) for the full user and developer guide, including which

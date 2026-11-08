@@ -142,7 +142,7 @@ They re-arm after a change.
 
 ## Data, privacy and consent
 
-- **Network:** only Medtronic's European CareLink endpoints are used. `NetworkPolicy` allows a few
+- **Network:** only MiniMed's European CareLink endpoints are used. `NetworkPolicy` allows a few
   GET endpoints and exactly two POST bodies: `display/message` (reads data) and the OAuth token
   request (sign-in and refresh). Redirects are refused.
 - **Tokens:** stored in the login Keychain only (`CredentialVault`), never synchronised with iCloud,
@@ -280,7 +280,7 @@ xcrun swiftc tools/make-icon.swift -o build/make-icon && build/make-icon assets
 - **Panel arrow:** the panel is an `NSPopover` with the system `menu` material. Its arrow cannot be
   tinted, so it is hidden with the undocumented `shouldHideAnchor` key, only when supported.
 - **Icon:** `assets/AppIcon.icns` is original artwork drawn by `tools/make-icon.swift`, with no
-  Medtronic branding.
+  MiniMed branding.
 
 ## Distribution
 

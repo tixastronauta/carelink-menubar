@@ -264,7 +264,7 @@ enum L10n {
         "consent.store": "This data may be saved in files on this Mac, for example to show the latest reading in a widget or for diagnostics.",
         "consent.sharing": "The app does not actively share this data with any entity: it only stays on this Mac's disk.",
         "consent.responsibility": "You are responsible for protecting this Mac and for keeping this data and these files intact and not sharing them with others.",
-        "consent.unofficial": "This is an unofficial app, not affiliated with Medtronic. It does not replace your pump, sensor or the MiniMed app, nor their alarms. Always confirm values in the official app.",
+        "consent.unofficial": "This is an unofficial app, not affiliated with MiniMed (formerly Medtronic Diabetes). It does not replace your pump, sensor or the MiniMed app, nor their alarms. Always confirm values in the official app.",
         "consent.withdraw": "This signs out of CareLink, deletes the files saved by the app on this Mac and quits. The next time you open the app, it will ask for consent again.",
 
         // Settings: About
@@ -272,8 +272,8 @@ enum L10n {
         "Licença": "Licence",
         "Código-fonte no GitHub": "Source code on GitHub",
         "Projeto original": "Original project",
-        "App não oficial, sem afiliação à Medtronic. Apenas leitura: não controla a bomba nem substitui a app MiniMed. Confirma sempre os valores na app oficial.":
-            "Unofficial app, not affiliated with Medtronic. Read-only: it does not control the pump or replace the MiniMed app. Always confirm values in the official app.",
+        "App não oficial, sem afiliação à MiniMed (antiga Medtronic Diabetes). Apenas leitura: não controla a bomba nem substitui a app MiniMed. Confirma sempre os valores na app oficial.":
+            "Unofficial app, not affiliated with MiniMed (formerly Medtronic Diabetes). Read-only: it does not control the pump or replace the MiniMed app. Always confirm values in the official app.",
     ]
 
     /// Portuguese text for keys that are identifiers rather than source sentences.
@@ -305,7 +305,7 @@ enum L10n {
         "consent.store": "Estes dados podem ficar guardados em ficheiros neste Mac, por exemplo para mostrar a última leitura num widget ou para diagnóstico.",
         "consent.sharing": "A app não partilha ativamente estes dados com nenhuma entidade: ficam apenas no disco deste Mac.",
         "consent.responsibility": "És responsável por proteger este Mac e por zelar pela integridade destes dados e ficheiros, não os partilhando com terceiros.",
-        "consent.unofficial": "Esta app não é oficial nem tem afiliação à Medtronic. Não substitui a bomba, o sensor nem a app MiniMed, nem os respetivos alarmes. Confirma sempre os valores na app oficial.",
+        "consent.unofficial": "Esta app não é oficial nem tem afiliação à MiniMed (antiga Medtronic Diabetes). Não substitui a bomba, o sensor nem a app MiniMed, nem os respetivos alarmes. Confirma sempre os valores na app oficial.",
         "consent.withdraw": "Termina a sessão no CareLink, apaga os ficheiros guardados pela app neste Mac e fecha-a. Da próxima vez que abrires a app, será pedido de novo o consentimento.",
         "info.shape": "Copia só os nomes e tipos dos campos da última leitura, sem valores. Útil para perceber que dados o CareLink envia. Disponível depois de uma atualização.",
     ]

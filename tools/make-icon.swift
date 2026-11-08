@@ -1,4 +1,4 @@
-// Generates the CareLink Menubar app icon (original artwork, not Medtronic branding).
+// Generates the CareLink Menubar app icon (original artwork, not MiniMed branding).
 // Usage: xcrun swiftc tools/make-icon.swift -o build/make-icon && build/make-icon assets
 // Writes assets/AppIcon.icns (via iconutil) and assets/AppIcon-1024.png for previews.
 import AppKit
