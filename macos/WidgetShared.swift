@@ -39,15 +39,58 @@ struct WidgetPoint: Codable, Equatable {
 }
 
 enum WidgetTimeline {
-    /// One entry per minute so the reading age stays current without new data.
-    static func entryDates(start: Date, minutes: Int = 60) -> [Date] {
-        (0..<minutes).map { start.addingTimeInterval(Double($0) * 60) }
+    /// A reading older than this is shown as stale.
+    static let staleAge: TimeInterval = 900
+    /// Most per-minute entries in one timeline. WidgetKit renders every entry ahead of time and the
+    /// app replaces the timeline on each new reading (about every 5 min), so a long per-minute
+    /// timeline is mostly rendered and thrown away (the 0.3.1 widget used 60 and spiked the CPU).
+    static let maxMinuteEntries = 10
+
+    /// Entry dates and when WidgetKit should ask for the next timeline.
+    struct Plan: Equatable {
+        var dates: [Date]
+        var reload: Date
     }
+
+    /// Only the moments the widget's text can change. While the reading is recent, one entry per
+    /// minute aligned to the reading (the age text counts whole minutes), up to the first stale
+    /// minute and at most `maxMinuteEntries`. Once stale, one entry every 5 min for an hour. No
+    /// reading: a single entry. Always an explicit reload date (never `.atEnd` on one entry).
+    static func plan(start: Date, reading: Date?) -> Plan {
+        guard let reading else { return Plan(dates: [start], reload: start.addingTimeInterval(3600)) }
+        var dates = [start]
+        let age = start.timeIntervalSince(reading)
+        if age > staleAge {
+            for step in 1...11 { dates.append(start.addingTimeInterval(Double(step) * 300)) }
+            return Plan(dates: dates, reload: dates[dates.count - 1].addingTimeInterval(300))
+        }
+        var next = reading.addingTimeInterval((age / 60).rounded(.down) * 60 + 60)
+        while dates.count < maxMinuteEntries {
+            dates.append(next)
+            if next.timeIntervalSince(reading) > staleAge { break }
+            next = next.addingTimeInterval(60)
+        }
+        return Plan(dates: dates, reload: dates[dates.count - 1].addingTimeInterval(60))
+    }
+
+    /// Readings mapped to a unit square for the background curve: x by time (0 = first, 1 = last),
+    /// y downwards (0 = top of `domain`, 1 = bottom), clamped. Fewer than two points → empty.
+    static func unitPoints(_ points: [WidgetPoint], domain: ClosedRange<Double>) -> [CGPoint] {
+        guard points.count >= 2, let first = points.first?.date, let last = points.last?.date else { return [] }
+        let span = max(last.timeIntervalSince(first), 1)
+        let height = max(domain.upperBound - domain.lowerBound, .ulpOfOne)
+        return points.map { point in
+            let x = point.date.timeIntervalSince(first) / span
+            let y = 1 - (point.value - domain.lowerBound) / height
+            return CGPoint(x: min(max(x, 0), 1), y: min(max(y, 0), 1))
+        }
+    }
+
     /// Same rule as the app: older than 15 min, missing or more than 5 min in the future.
     static func isStale(_ summary: WidgetSummary, at date: Date) -> Bool {
         guard let reading = summary.readingDate else { return true }
         let age = date.timeIntervalSince(reading)
-        return age > 900 || age < -300
+        return age > staleAge || age < -300
     }
     /// Applies the language the app was using when it wrote the summary.
     static func applyLanguage(of summary: WidgetSummary?) {
@@ -64,6 +107,8 @@ enum SharedStore {
     static var groupID: String? { Bundle.main.object(forInfoDictionaryKey: "CareLinkAppGroup") as? String }
     /// URL the widget opens on click; the app shows its panel.
     static let openURL = URL(string: "carelinkmenu://open")!
+    /// WidgetKit kind of the glucose widget; the app reloads only this one.
+    static let widgetKind = "CareLinkGlucose"
 
     static var fileURL: URL? {
         guard let groupID, !groupID.isEmpty,

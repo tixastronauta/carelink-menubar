@@ -33,10 +33,12 @@ struct SummaryProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<SummaryEntry>) -> Void) {
-        // One entry per minute keeps the reading age current; the app also reloads after each refresh.
+        // Few entries: WidgetKit renders each one ahead of time, and the app reloads on every new
+        // reading anyway (see WidgetTimeline.plan).
         let summary = SharedStore.read()
-        let entries = WidgetTimeline.entryDates(start: Date()).map { SummaryEntry(date: $0, summary: summary) }
-        completion(Timeline(entries: entries, policy: .atEnd))
+        let plan = WidgetTimeline.plan(start: Date(), reading: summary?.readingDate)
+        let entries = plan.dates.map { SummaryEntry(date: $0, summary: summary) }
+        completion(Timeline(entries: entries, policy: .after(plan.reload)))
     }
 }
 
@@ -192,7 +194,8 @@ struct SummaryContent: View {
     private var explicitChart: some View {
         Group {
             if let points = summary?.points, points.count >= 2 {
-                let floor = yDomain(points).lowerBound
+                let domain = yDomain(points)
+                let floor = domain.lowerBound
                 Chart {
                     if let low = summary?.targetLow, let high = summary?.targetHigh {
                         RectangleMark(yStart: .value("low", low), yEnd: .value("high", high))
@@ -216,7 +219,7 @@ struct SummaryContent: View {
                     }
                 }
                 .chartYAxis { AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) }
-                .chartYScale(domain: yDomain(points))
+                .chartYScale(domain: domain)
             } else {
                 Color.clear
             }
@@ -304,27 +307,17 @@ struct SummaryContent: View {
 
     // MARK: Background chart (small and medium)
 
-    /// The real last-3 h readings drawn faintly behind the value, edge to edge.
+    /// The real last-3 h readings drawn faintly behind the value, edge to edge. A plain SwiftUI
+    /// path (no axes or labels to lay out) costs far less than Swift Charts on every render.
     @ViewBuilder var backgroundChart: some View {
         if let points = summary?.points, points.count >= 2 {
-            let floor = yDomain(points).lowerBound
-            Chart {
-                ForEach(points, id: \.date) { point in
-                    AreaMark(x: .value("t", point.date), yStart: .value("floor", floor), yEnd: .value("v", point.value))
-                        .interpolationMethod(.monotone)
-                        .foregroundStyle(LinearGradient(colors: [tint.opacity(0.28), tint.opacity(0.02)],
-                                                        startPoint: .top, endPoint: .bottom))
-                    LineMark(x: .value("t", point.date), y: .value("v", point.value))
-                        .interpolationMethod(.monotone)
-                        .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-                        .foregroundStyle(tint.opacity(0.45))
-                }
+            let curve = WidgetCurve(points: points, domain: yDomain(points))
+            ZStack {
+                curve.closedArea()
+                    .fill(LinearGradient(colors: [tint.opacity(0.28), tint.opacity(0.02)],
+                                         startPoint: .top, endPoint: .bottom))
+                curve.stroke(tint.opacity(0.45), style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
             }
-            .chartXAxis(.hidden)
-            .chartYAxis(.hidden)
-            .chartLegend(.hidden)
-            .chartYScale(domain: yDomain(points))
-            .chartPlotStyle { $0.frame(maxWidth: .infinity, maxHeight: .infinity) }
             // Keep the line in the lower two thirds so the header stays clean.
             .padding(.top, 52)
             .accessibilityHidden(true)
@@ -338,10 +331,51 @@ struct SummaryContent: View {
     }
 }
 
+/// Smoothed line through the readings (quadratic curves through the midpoints, so it never
+/// overshoots the data, like the monotone interpolation of the large chart).
+struct WidgetCurve: Shape {
+    let unit: [CGPoint]
+
+    init(points: [WidgetPoint], domain: ClosedRange<Double>) {
+        unit = WidgetTimeline.unitPoints(points, domain: domain)
+    }
+
+    func path(in rect: CGRect) -> Path {
+        let scaled = unit.map { CGPoint(x: rect.minX + $0.x * rect.width, y: rect.minY + $0.y * rect.height) }
+        var path = Path()
+        guard let first = scaled.first, let last = scaled.last, scaled.count >= 2 else { return path }
+        path.move(to: first)
+        for index in 1..<scaled.count {
+            let previous = scaled[index - 1], point = scaled[index]
+            let middle = CGPoint(x: (previous.x + point.x) / 2, y: (previous.y + point.y) / 2)
+            if index == 1 { path.addLine(to: middle) } else { path.addQuadCurve(to: middle, control: previous) }
+        }
+        path.addLine(to: last)
+        return path
+    }
+
+    /// The curve closed down to the bottom edge, for the gradient fill.
+    func closedArea() -> some Shape {
+        AreaShape(curve: self)
+    }
+
+    private struct AreaShape: Shape {
+        let curve: WidgetCurve
+        func path(in rect: CGRect) -> Path {
+            var path = curve.path(in: rect)
+            guard let first = curve.unit.first, let last = curve.unit.last else { return path }
+            path.addLine(to: CGPoint(x: rect.minX + last.x * rect.width, y: rect.maxY))
+            path.addLine(to: CGPoint(x: rect.minX + first.x * rect.width, y: rect.maxY))
+            path.closeSubpath()
+            return path
+        }
+    }
+}
+
 struct GlucoseWidget: Widget {
     var body: some WidgetConfiguration {
         let _ = WidgetTimeline.applyLanguage(of: SharedStore.read())
-        return StaticConfiguration(kind: "CareLinkGlucose", provider: SummaryProvider()) { entry in
+        return StaticConfiguration(kind: SharedStore.widgetKind, provider: SummaryProvider()) { entry in
             SummaryView(entry: entry)
         }
         .configurationDisplayName("CareLink")
