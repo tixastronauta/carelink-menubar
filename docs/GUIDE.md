@@ -112,6 +112,14 @@ in Notification Center.
   - consumables, with the same ending colours as the panel.
 - **Behaviour:**
   - The reading age updates every minute.
+  - Timeline: WidgetKit renders every timeline entry ahead of time, and the app replaces the
+    timeline on each new reading. So the widget asks for few entries: one per minute (aligned to
+    the reading) until the reading turns stale, at most 10; once stale, one every 5 minutes for an
+    hour; with no data, a single entry. Each timeline names its own reload date. Until 0.3.1 it
+    asked for 60 per-minute entries, most of them rendered and discarded on the next reading,
+    which showed up as short CPU spikes of the widget process.
+  - The small and medium background trace is a plain SwiftUI path, cheaper than Swift Charts; the
+    large widget keeps the chart.
   - After 15 minutes the value turns grey and the age orange.
   - Text follows the app's language.
   - Clicking the widget opens the panel (`carelinkmenu://open`).
@@ -230,7 +238,7 @@ diagnostic logs.
 - cancellation and logout races;
 - refresh scheduling and alert transitions;
 - diagnostics redaction;
-- the widget hand-off;
+- the widget hand-off, timeline plan and background curve geometry;
 - both languages.
 
 These are build and model tests, not live UI validation.
@@ -265,7 +273,10 @@ xcrun swiftc tools/make-icon.swift -o build/make-icon && build/make-icon assets
   `swiftc` for arm64 and x86_64, then joins them with `lipo`.
 - **Widget extension:** compiled separately and linked with `-e _NSExtensionMain` (the Swift `@main`
   entry crashes in ExtensionFoundation). It gets a unique build number per build, because the widget
-  gallery caches its sizes per version. The build stops the stale widget process afterwards.
+  gallery caches its sizes per version. The build stops the stale widget process afterwards
+  and registers the new extension with `pluginkit -a`, so the system does not keep reporting the
+  previous build's version. Running the app from `build/` works, but `/Applications` gives the
+  extension a stable registration.
 - **App Group:** prefixed with the signature's real Team ID, read from a scratch signature. The ID
   in an "Apple Development: Name (ID)" certificate name is a personal ID, not the Team ID. Writes to
   the group container use a temp file and `rename(2)`, because `.atomic` writes are refused there.

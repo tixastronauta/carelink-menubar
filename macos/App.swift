@@ -297,7 +297,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
                 SharedStore.log.info("widget summary cleared (sharing: \(self.prefs.shareWithWidget, privacy: .public), signed in: \(self.store.isSignedIn, privacy: .public), data: \(self.store.snapshot != nil, privacy: .public))")
                 widgetKey = "signed-out"
                 SharedStore.delete()
-                WidgetCenter.shared.reloadAllTimelines()
+                WidgetCenter.shared.reloadTimelines(ofKind: SharedStore.widgetKind)
             }
             return
         }
@@ -346,7 +346,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         guard key != widgetKey else { return }
         widgetKey = key
         SharedStore.write(summary)
-        WidgetCenter.shared.reloadAllTimelines()
+        WidgetCenter.shared.reloadTimelines(ofKind: SharedStore.widgetKind)
     }
 
     private var sparklineKey = ""
