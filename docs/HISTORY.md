@@ -76,3 +76,14 @@ Built in close iteration with daily use. Highlights:
 - **Naming:** the company is now referred to as MiniMed (formerly Medtronic Diabetes).
 - **Compatibility:** a few long SwiftUI and key-building expressions were split so older Swift
   compilers can type-check them.
+
+## 0.3.2: lighter widget
+
+- **Widget CPU:** the widget timeline now has only the entries whose text can change (one per
+  minute until the reading turns stale, at most 10) instead of 60 per-minute entries that WidgetKit
+  rendered and then discarded on every new reading. This caused short CPU spikes of the widget
+  process (about three times the app's total CPU time). The small and medium background trace is
+  now a plain SwiftUI path instead of Swift Charts, and the app reloads only the CareLink widget kind.
+- **Registration:** the build registers the new widget extension with `pluginkit -a`.
+- **Crashes:** the November 2026 widget crash reports came from an old "CareLink Menu.app" build
+  that still started through the Swift `@main` entry; current builds use `_NSExtensionMain`.
