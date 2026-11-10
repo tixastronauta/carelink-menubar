@@ -87,3 +87,13 @@ Built in close iteration with daily use. Highlights:
 - **Registration:** the build registers the new widget extension with `pluginkit -a`.
 - **Crashes:** the November 2026 widget crash reports came from an old "CareLink Menu.app" build
   that still started through the Swift `@main` entry; current builds use `_NSExtensionMain`.
+
+## 0.3.3: in-app updates
+
+- **Updates inside the app:** once a day the app checks for a new version. When there is one, a
+  notice appears in the panel (and a notification, if notifications are on); one click shows the
+  release notes and installs the update, then the app relaunches. No new download from the website
+  is needed from now on. Updates are signed and verified before installing, and the check sends no
+  health data. It can be turned off in Settings → About.
+- **Development build:** developers can run a separate "CareLink Menubar Dev" next to the installed
+  app, with its own session, settings and widget, and no automatic updates.

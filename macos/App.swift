@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     private let launch = LaunchAtLogin()
     private let prefs = Preferences()
     private let notifier = Notifier()
+    private let updater = AppUpdater()
     private var settingsWindow: NSWindow?
     private var settingsTabs: SettingsTabController?
 
@@ -37,7 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         host.sizingOptions = .preferredContentSize  // window follows the text height per language
         let window = NSWindow(contentViewController: host)
         window.styleMask = [.titled]
-        window.title = "CareLink Menubar"
+        window.title = AppVariant.current.displayName
         window.isReleasedWhenClosed = false
         window.level = .floating
         window.center()
@@ -95,7 +96,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         }
         store.setRefreshInterval(prefs.refreshInterval)
         notifier.setUp(requestPermission: prefs.technicalNotifications)
-        notifier.onOpen = { [weak self] in self?.showPopover() }
+        notifier.onOpen = { [weak self] identifier in
+            if identifier == Notifier.updateIdentifier { self?.updater.showUpdate() } else { self?.showPopover() }
+        }
+        updater.onFound = { [weak self] version in
+            guard let self, self.prefs.technicalNotifications else { return }
+            self.notifier.postUpdate(version: version)
+        }
+        updater.onPendingChange = { [weak self] version in
+            guard let self else { return }
+            self.panelState.updateVersion = version
+            if self.popover.isShown { self.resizePanel() }
+        }
+        // Only after consent, like everything else; a no-op in development builds.
+        updater.start()
         store.onAlert = { [weak self] alert in
             guard let self, self.prefs.technicalNotifications else { return }
             self.notifier.post(alert)
@@ -133,7 +147,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             default: break
             }
         }
-        item.button?.attributedTitle = NSAttributedString(string: store.statusTitle, attributes: attributes)
+        let title = NSMutableAttributedString(string: store.statusTitle, attributes: attributes)
+        if AppVariant.current.isDev {
+            // Tells the development build apart from the installed release in the menu bar.
+            title.append(NSAttributedString(string: " DEV", attributes: [
+                .font: NSFont.systemFont(ofSize: 9, weight: .heavy), .foregroundColor: NSColor.systemOrange,
+                .baselineOffset: 4]))
+        }
+        item.button?.attributedTitle = title
         updateWidget()
         item.button?.image = prefs.menuBarSparkline ? sparkline() : nil
         item.button?.imagePosition = .imageLeft
@@ -183,6 +204,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         CareLinkPopover(store: store, prefs: prefs, panel: panelState,
                         onSettings: { [weak self] in DispatchQueue.main.async { self?.showSettings() } },
                         onCopy: { [weak self] in self?.copyPanelImage() },
+                        onUpdate: { [weak self] in self?.updater.showUpdate() },
                         panelHeight: height)
     }
 
@@ -224,7 +246,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
                 onSignIn: { [weak self] in self?.signInFromSettings() },
                 onLogout: { [weak self] in self?.confirmLogout() }))
             tabs.addPane("Avançado", symbol: "wrench.and.screwdriver", AdvancedSettings(store: store, prefs: prefs))
-            tabs.addPane("Sobre", symbol: "info.circle", AboutSettings(prefs: prefs,
+            tabs.addPane("Sobre", symbol: "info.circle", AboutSettings(prefs: prefs, updater: updater,
                 onWithdrawConsent: { [weak self] in self?.confirmWithdrawConsent() }))
             settingsTabs = tabs
             let window = NSWindow(contentViewController: tabs)
@@ -410,6 +432,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             parts.append(String(describing: snapshot.infusionLife.rawValue))
         }
         parts.append(prefs.language.rawValue)
+        parts.append(panelState.updateVersion ?? "-")
         return parts.joined(separator: "|")
     }
     private var lastLayoutSignature = ""
@@ -455,7 +478,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     }
     func applicationWillTerminate(_ notification: Notification) { store?.stop() }
 
-    /// carelinkmenu://open (widget click) shows the panel; ignored before consent.
+    /// carelinkmenu://open (carelinkmenu-dev:// for the development variant; widget click) shows the panel; ignored before consent.
     func application(_ application: NSApplication, open urls: [URL]) {
         guard urls.contains(where: { $0.scheme == SharedStore.openURL.scheme }), Consent.isAccepted, store != nil else { return }
         DispatchQueue.main.async { [weak self] in self?.showPopover() }
@@ -465,6 +488,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
 @main
 struct CareLinkMenubar {
     static func main() {
+        AppLanguage.applyToBundles()
         let app = NSApplication.shared
         let delegate = AppDelegate()
         app.delegate = delegate

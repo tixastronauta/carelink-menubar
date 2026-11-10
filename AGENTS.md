@@ -28,3 +28,8 @@ Logout cancels work before clearing Keychain/memory; preserve cancellation gener
 Test NativeChecks, NativeIntegrationChecks and WidgetChecks; VaultChecks uses a unique synthetic service.
 README screenshots must come from synthetic data (tools/make-screenshots.sh), never real readings.
 NativeLiveCheck is a developer-only read check; never enable renewal for a borrowed legacy token.
+In-app updates (Sparkle) are release-only and fetch only the signed appcast and archives from GitHub
+Releases: never send health data, tokens or a system profile with them. Never commit, print or log
+the Sparkle EdDSA private key; never change SUPublicEDKey (installed apps would stop updating).
+Develop with the default development build (separate identifiers); never point it at the release
+Keychain service, App Group or update feed.

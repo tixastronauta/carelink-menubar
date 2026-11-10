@@ -1,5 +1,9 @@
-# Builds CareLink Menubar and publishes CareLink-Menubar.dmg as a GitHub release.
-# - Push a tag like v0.3.1 to publish a release.
+# Builds CareLink Menubar (release variant) and publishes it as a GitHub release:
+# - CareLink-Menubar.dmg (+ .sha256) for new installs;
+# - CareLink-Menubar.zip and appcast.xml for in-app updates (Sparkle). Both are signed with the
+#   EdDSA key in the SPARKLE_ED_PRIVATE_KEY secret; installed apps reject anything else.
+# - Push a tag like v0.3.3 to publish a release. The tag must match the app version, and
+#   docs/HISTORY.md must have a "## <version>" section (it becomes the update notes).
 # - "Run workflow" (workflow_dispatch) only builds and uploads the DMG as an artifact, for testing.
 #
 # Signing: without secrets the app is ad-hoc signed and the desktop widget is left out (it needs a
@@ -53,10 +57,44 @@ jobs:
           rm "$RUNNER_TEMP/cert.p12"
 
       - name: Build
-        run: python3 tools/build-menubar.py
+        run: python3 tools/build-menubar.py --release
 
       - name: Package disk image
         run: ./tools/make-dmg.sh
+
+      - name: Package and sign the in-app update
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+        run: |
+          if [ -z "$SPARKLE_ED_PRIVATE_KEY" ]; then
+            echo "::error::SPARKLE_ED_PRIVATE_KEY is not set: installed apps could not verify this update."
+            exit 1
+          fi
+          version="${GITHUB_REF_NAME#v}"
+          built=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "build/CareLink Menubar.app/Contents/Info.plist")
+          if [ "$built" != "$version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match the app version $built (tools/build-menubar.py)."
+            exit 1
+          fi
+          # The secret must be the private half of the app's SUPublicEDKey, or installed apps would
+          # reject this update. Compare public keys (the private key is never printed).
+          expected=$(/usr/libexec/PlistBuddy -c "Print :SUPublicEDKey" "build/CareLink Menubar.app/Contents/Info.plist")
+          derived=$(printf '%s' "$SPARKLE_ED_PRIVATE_KEY" | xcrun swift tools/sparkle-public-key.swift)
+          if [ "$derived" != "$expected" ]; then
+            echo "::error::SPARKLE_ED_PRIVATE_KEY does not match SUPublicEDKey ($expected)."
+            exit 1
+          fi
+          sign_update="$(ls -d build/deps/Sparkle-*/bin/sign_update | head -1)"
+          ditto -c -k --sequesterRsrc --keepParent "build/CareLink Menubar.app" build/CareLink-Menubar.zip
+          signed=$(printf '%s' "$SPARKLE_ED_PRIVATE_KEY" | "$sign_update" --ed-key-file - build/CareLink-Menubar.zip)
+          python3 tools/appcast.py --version "$version" \
+            --url "https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME/CareLink-Menubar.zip" \
+            --sign-output "$signed" --history docs/HISTORY.md > build/appcast.xml
+          # Sign the feed itself (the app sets SURequireSignedFeed), then check both signatures.
+          printf '%s' "$SPARKLE_ED_PRIVATE_KEY" | "$sign_update" --ed-key-file - build/appcast.xml
+          printf '%s' "$SPARKLE_ED_PRIVATE_KEY" | "$sign_update" --ed-key-file - --verify build/appcast.xml
+          grep -q "sparkle-signatures" build/appcast.xml
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -72,4 +110,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" build/CareLink-Menubar.dmg build/CareLink-Menubar.dmg.sha256 \
+            build/CareLink-Menubar.zip build/appcast.xml \
             --title "CareLink Menubar ${GITHUB_REF_NAME#v}" --notes-file .github/release-notes.md

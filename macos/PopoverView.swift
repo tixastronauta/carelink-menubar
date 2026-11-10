@@ -6,6 +6,8 @@ import Charts
 final class PanelState: ObservableObject {
     @Published var justCopied = false
     @Published var flash = false
+    /// New app version waiting (release builds; set by AppUpdater), shown as a notice.
+    @Published var updateVersion: String?
 }
 
 struct CareLinkPopover: View {
@@ -14,6 +16,7 @@ struct CareLinkPopover: View {
     @ObservedObject var panel: PanelState = PanelState()
     var onSettings: () -> Void = {}
     var onCopy: () -> Void = {}
+    var onUpdate: () -> Void = {}
     var panelHeight: CGFloat = 420
     /// Rendering for the copied image: no header buttons.
     var exporting: Bool = false
@@ -53,6 +56,24 @@ struct CareLinkPopover: View {
     }
     private func decimal(_ value: Double) -> String {
         value.formatted(.number.precision(.fractionLength(1)).locale(L10n.locale))
+    }
+    /// A new app version found by a scheduled check; the button opens Sparkle's update window
+    /// (release notes, install and relaunch).
+    private func updateNotice(_ version: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "arrow.down.circle.fill")
+                .font(.system(size: 18))
+                .foregroundStyle(accent)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(tr("Nova versão disponível")).font(.subheadline.weight(.semibold))
+                Text(tr("CareLink Menubar %@", version)).font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button(tr("Ver e atualizar")) { onUpdate() }
+                .controlSize(.small)
+        }
+        .padding(10)
+        .background(accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
     }
     /// Mean, CV and GMI spread across the card width, with explanations on hover.
     private func statsRow(_ stats: GlucoseStats) -> some View {
@@ -268,6 +289,14 @@ struct CareLinkPopover: View {
                     Image(systemName: "drop.fill").foregroundStyle(accent)
                 }
                 .font(.headline)
+                if AppVariant.current.isDev {
+                    Text("DEV")
+                        .font(.caption2.weight(.heavy))
+                        .foregroundStyle(.orange)
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(Color.orange.opacity(0.15), in: Capsule())
+                        .help(tr("Versão de desenvolvimento: sessão, definições e widget próprios, sem atualizações automáticas."))
+                }
                 if prefs.diagnosticsEnabled {
                     // Visible reminder: diagnostics keeps writing responses until turned off.
                     Text(tr("Diagnóstico"))
@@ -303,6 +332,9 @@ struct CareLinkPopover: View {
                 .help(tr("Definições"))
                 .accessibilityLabel(tr("Definições"))
                 }
+            }
+            if let version = panel.updateVersion, !exporting {
+                updateNotice(version)
             }
             if !store.isSignedIn || store.requiresLogin || store.isSigningIn {
                 VStack(alignment: .leading, spacing: 12) {

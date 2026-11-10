@@ -6,7 +6,7 @@ set -eu
 cd "$(dirname "$0")/.."
 app="build/CareLink Menubar.app"
 out="${1:-build/CareLink-Menubar.dmg}"
-[ -d "$app" ] || { echo "Build the app first: python3 tools/build-menubar.py" >&2; exit 1; }
+[ -d "$app" ] || { echo "Build the release app first: python3 tools/build-menubar.py --release" >&2; exit 1; }
 version=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$app/Contents/Info.plist")
 
 staging=$(mktemp -d)

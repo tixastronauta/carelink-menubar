@@ -1,10 +1,12 @@
 import Foundation
 import UserNotifications
 
-/// Local macOS notifications for technical failures only (never glucose values or alarms).
+/// Local macOS notifications for technical failures and new app versions (never glucose values or alarms).
 @MainActor
 final class Notifier: NSObject, UNUserNotificationCenterDelegate {
-    var onOpen: (() -> Void)?
+    /// Called with the clicked notification's identifier.
+    var onOpen: ((String) -> Void)?
+    static let updateIdentifier = "update-available"
     private let center = UNUserNotificationCenter.current()
 
     func setUp(requestPermission: Bool) {
@@ -47,6 +49,14 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         center.add(UNNotificationRequest(identifier: identifier, content: content, trigger: nil))
     }
 
+    /// A new version found by a scheduled check; clicking it opens the update window.
+    func postUpdate(version: String) {
+        let content = UNMutableNotificationContent()
+        content.title = tr("CareLink Menubar: nova versão disponível")
+        content.body = tr("A versão %@ está disponível. Clica para ver as novidades e atualizar.", version)
+        center.add(UNNotificationRequest(identifier: Self.updateIdentifier, content: content, trigger: nil))
+    }
+
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
                                             withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         completionHandler([.banner, .sound])
@@ -54,7 +64,8 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
                                             withCompletionHandler completionHandler: @escaping () -> Void) {
-        Task { @MainActor in self.onOpen?() }
+        let identifier = response.notification.request.identifier
+        Task { @MainActor in self.onOpen?(identifier) }
         completionHandler()
     }
 }

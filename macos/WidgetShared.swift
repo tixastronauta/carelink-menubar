@@ -106,7 +106,7 @@ enum SharedStore {
     /// App Group ID (Team-ID prefixed), injected into both Info.plists by the build script.
     static var groupID: String? { Bundle.main.object(forInfoDictionaryKey: "CareLinkAppGroup") as? String }
     /// URL the widget opens on click; the app shows its panel.
-    static let openURL = URL(string: "carelinkmenu://open")!
+    static let openURL = URL(string: "\(AppVariant.current.urlScheme)://open")!
     /// WidgetKit kind of the glucose widget; the app reloads only this one.
     static let widgetKind = "CareLinkGlucose"
 
@@ -118,7 +118,7 @@ enum SharedStore {
     }
 
     /// Status only (never values): helps diagnose the app/widget hand-off.
-    static let log = Logger(subsystem: "local.tcx.carelink.menu", category: "widget")
+    static let log = Logger(subsystem: AppVariant.current.logSubsystem, category: "widget")
 
     static func write(_ summary: WidgetSummary) {
         guard let url = fileURL else { log.error("widget summary not written: no group container"); return }

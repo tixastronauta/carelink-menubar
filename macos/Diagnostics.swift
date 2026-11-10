@@ -1,7 +1,8 @@
 import Foundation
 
 /// Developer diagnostics, off by default. While enabled (until the user turns it off; the panel
-/// shows a "Diagnostics" badge) each CareLink request is appended as a JSON line to ~/Library/Logs/CareLink Menubar with private permissions.
+/// shows a "Diagnostics" badge) each CareLink request is appended as a JSON line to ~/Library/Logs/CareLink Menubar ("CareLink Menubar Dev" for the development
+/// variant) with private permissions.
 /// Responses include health data and identity; tokens, codes and auth values are always redacted.
 /// Files older than 7 days are purged. Nothing here is ever written inside the repository.
 enum Diagnostics {
@@ -23,7 +24,7 @@ enum Diagnostics {
 
     static var directory: URL {
         FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Logs/CareLink Menubar", isDirectory: true)
+            .appendingPathComponent("Library/Logs/\(AppVariant.current.logsFolder)", isDirectory: true)
     }
     static var isEnabled: Bool {
         get {

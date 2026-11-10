@@ -9,7 +9,7 @@ protocol TokenStorage {
 
 struct CredentialVault: TokenStorage {
     private let service: String
-    init(service: String = "local.tcx.carelink.menu.oauth.eu") { self.service = service }
+    init(service: String = AppVariant.current.keychainService) { self.service = service }
     private var query: [String:Any] {
         [kSecClass as String:kSecClassGenericPassword, kSecAttrService as String:service,
          kSecAttrAccount as String:"carelink-session", kSecAttrSynchronizable as String:false]

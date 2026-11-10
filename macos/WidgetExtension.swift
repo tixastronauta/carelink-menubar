@@ -101,7 +101,7 @@ struct SummaryContent: View {
     // MARK: Pieces
 
     private var header: some View {
-        Label("CareLink Menubar", systemImage: "drop.fill")
+        Label(AppVariant.current.displayName, systemImage: "drop.fill")
             .font(.caption.weight(.semibold))
             .foregroundStyle(accent)
     }
@@ -378,7 +378,7 @@ struct GlucoseWidget: Widget {
         return StaticConfiguration(kind: SharedStore.widgetKind, provider: SummaryProvider()) { entry in
             SummaryView(entry: entry)
         }
-        .configurationDisplayName("CareLink")
+        .configurationDisplayName(AppVariant.current.isDev ? "CareLink Dev" : "CareLink")
         .description(tr("Glicemia, tendência e gráfico das últimas 3h."))
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }

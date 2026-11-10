@@ -14,6 +14,10 @@ for macOS 14 or later (Apple Silicon and Intel).
 The app then appears in your menu bar. Accept the consent screen and sign in on the official
 CareLink page.
 
+**Updates:** from 0.3.3 on, the app checks for new versions once a day and shows a notice in its
+panel; one click installs the update. Coming from 0.3.2 or earlier? Install this version from the
+DMG once, and later versions will reach you automatically.
+
 > CareLink Menubar is unofficial and read-only. It never controls your pump and does not replace
 > your pump, sensor, the MiniMed app or their alarms. Always confirm values in the official app.
 
