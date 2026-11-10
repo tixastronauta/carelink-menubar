@@ -53,7 +53,15 @@ import Foundation
         WidgetTimeline.applyLanguage(of: WidgetSummary(glucoseText: "", unit: "", trendSymbol: "", readingDate: nil,
                                                        range: nil, updated: now, language: "pt"))
         precondition(Snapshot.ageText(of: now, now: now.addingTimeInterval(420)) == "há 7min")
-        precondition(SharedStore.openURL.scheme == "carelinkmenu")
-        print("PASS: widget summary encoding, legacy decoding, short timeline plan, background curve, staleness, language, open URL")
+        // A check binary has no CareLinkVariant key: release identifiers, unchanged since 0.2.
+        precondition(AppVariant.current == .release && SharedStore.openURL.scheme == "carelinkmenu")
+        let release = AppVariant.release, dev = AppVariant.dev
+        precondition(release.keychainService == "local.tcx.carelink.menu.oauth.eu" && release.updatesEnabled)
+        precondition(release.logsFolder == "CareLink Menubar" && release.logSubsystem == "local.tcx.carelink.menu")
+        // The development variant shares nothing with the release and never updates itself.
+        precondition(dev.keychainService != release.keychainService && dev.urlScheme == "carelinkmenu-dev")
+        precondition(dev.logsFolder != release.logsFolder && dev.logSubsystem != release.logSubsystem)
+        precondition(!dev.updatesEnabled && dev.displayName == "CareLink Menubar Dev")
+        print("PASS: widget summary encoding, legacy decoding, short timeline plan, background curve, staleness, language, open URL, app variants")
     }
 }

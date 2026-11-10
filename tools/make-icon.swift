@@ -1,10 +1,15 @@
 // Generates the CareLink Menubar app icon (original artwork, not MiniMed branding).
-// Usage: xcrun swiftc tools/make-icon.swift -o build/make-icon && build/make-icon assets
+// Usage: xcrun swiftc tools/make-icon.swift -o build/make-icon && build/make-icon assets [dev]
 // Writes assets/AppIcon.icns (via iconutil) and assets/AppIcon-1024.png for previews.
+// With "dev": the development variant's icon (orange, "DEV" band) as AppIcon-Dev.icns/-1024.png.
 import AppKit
 
-let accentLight = NSColor(srgbRed: 0.13, green: 0.66, blue: 0.69, alpha: 1)
-let accentDark = NSColor(srgbRed: 0.04, green: 0.37, blue: 0.43, alpha: 1)
+let dev = CommandLine.arguments.dropFirst(2).contains("dev")
+let accentLight = dev ? NSColor(srgbRed: 0.98, green: 0.62, blue: 0.22, alpha: 1)
+                      : NSColor(srgbRed: 0.13, green: 0.66, blue: 0.69, alpha: 1)
+let accentDark = dev ? NSColor(srgbRed: 0.72, green: 0.30, blue: 0.04, alpha: 1)
+                     : NSColor(srgbRed: 0.04, green: 0.37, blue: 0.43, alpha: 1)
+let baseName = dev ? "AppIcon-Dev" : "AppIcon"
 
 /// Draws the icon on a 1024-point canvas, scaled to `size` pixels.
 func render(size: Int) -> NSBitmapImageRep {
@@ -83,12 +88,26 @@ func render(size: Int) -> NSBitmapImageRep {
     context.strokePath()
     context.restoreGState()
 
+    if dev {
+        // "DEV" band across the bottom of the tile, so the development build is obvious.
+        context.saveGState()
+        context.addPath(tilePath)
+        context.clip()
+        context.setFillColor(NSColor.black.withAlphaComponent(0.55).cgColor)
+        context.fill(CGRect(x: 100, y: 100, width: 824, height: 112))
+        context.restoreGState()
+        let text = NSAttributedString(string: "DEV", attributes: [
+            .font: NSFont.systemFont(ofSize: 92, weight: .heavy), .foregroundColor: NSColor.white, .kern: 10])
+        let bounds = text.size()
+        text.draw(at: CGPoint(x: 512 - bounds.width / 2, y: 158 - bounds.height / 2))
+    }
+
     NSGraphicsContext.restoreGraphicsState()
     return rep
 }
 
 let output = URL(fileURLWithPath: CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "assets")
-let iconset = output.appendingPathComponent("AppIcon.iconset")
+let iconset = output.appendingPathComponent("\(baseName).iconset")
 try? FileManager.default.removeItem(at: iconset)
 try FileManager.default.createDirectory(at: iconset, withIntermediateDirectories: true)
 for (points, scales) in [(16, [1, 2]), (32, [1, 2]), (128, [1, 2]), (256, [1, 2]), (512, [1, 2])] {
@@ -99,11 +118,11 @@ for (points, scales) in [(16, [1, 2]), (32, [1, 2]), (128, [1, 2]), (256, [1, 2]
     }
 }
 try render(size: 1024).representation(using: .png, properties: [:])!
-    .write(to: output.appendingPathComponent("AppIcon-1024.png"))
+    .write(to: output.appendingPathComponent("\(baseName)-1024.png"))
 let iconutil = Process()
 iconutil.executableURL = URL(fileURLWithPath: "/usr/bin/iconutil")
-iconutil.arguments = ["-c", "icns", iconset.path, "-o", output.appendingPathComponent("AppIcon.icns").path]
+iconutil.arguments = ["-c", "icns", iconset.path, "-o", output.appendingPathComponent("\(baseName).icns").path]
 try iconutil.run()
 iconutil.waitUntilExit()
 try FileManager.default.removeItem(at: iconset)
-print(iconutil.terminationStatus == 0 ? "wrote \(output.path)/AppIcon.icns" : "iconutil failed")
+print(iconutil.terminationStatus == 0 ? "wrote \(output.path)/\(baseName).icns" : "iconutil failed")

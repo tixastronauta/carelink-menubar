@@ -11,7 +11,7 @@ final class Preferences: ObservableObject {
     @Published var highLimit: Double { didSet { save("highLimit", highLimit) } }
     @Published var refreshMinutes: Int { didSet { save("refreshMinutes", refreshMinutes) } }
     @Published var language: AppLanguage {
-        didSet { L10n.choice = language; save("language", language.rawValue) }
+        didSet { L10n.choice = language; save("language", language.rawValue); AppLanguage.applyToBundles(defaults: defaults) }
     }
     /// Writes the latest-reading summary for the desktop widget (on by default; off deletes it).
     @Published var shareWithWidget: Bool { didSet { save("shareWithWidget", shareWithWidget) } }

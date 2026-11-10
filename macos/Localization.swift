@@ -5,6 +5,24 @@ import Foundation
 enum AppLanguage: String, CaseIterable, Identifiable {
     case system, portuguese = "pt", english = "en"
     var id: String { rawValue }
+
+    /// Bundle languages for system-drawn text, such as Sparkle's update windows: the app's own
+    /// choice when it has one, otherwise macOS. Read by frameworks at launch, so a change made
+    /// in Settings applies to them from the next launch (tr() text changes immediately).
+    var bundleLanguages: [String]? {
+        switch self {
+        case .system: return nil
+        case .portuguese: return ["pt-PT"]
+        case .english: return ["en"]
+        }
+    }
+
+    /// Writes the stored choice to the app's AppleLanguages default; call before any UI loads.
+    static func applyToBundles(defaults: UserDefaults = .standard) {
+        let stored = AppLanguage(rawValue: defaults.string(forKey: "language") ?? "") ?? .system
+        if let languages = stored.bundleLanguages { defaults.set(languages, forKey: "AppleLanguages") }
+        else { defaults.removeObject(forKey: "AppleLanguages") }
+    }
 }
 
 /// Minimal in-app localization, switchable at runtime without restarting.
@@ -40,6 +58,20 @@ enum L10n {
             "Removes the session from this Mac and clears the data shown. To see data again, you will need to sign in again.",
         "Terminar sessão": "Sign Out",
         "Cancelar": "Cancel",
+        // Updates and development build
+        "CareLink Menubar: nova versão disponível": "CareLink Menubar: new version available",
+        "A versão %@ está disponível. Clica para ver as novidades e atualizar.": "Version %@ is available. Click to see what's new and update.",
+        "Nova versão disponível": "New version available",
+        "CareLink Menubar %@": "CareLink Menubar %@",
+        "Ver e atualizar": "View and Update",
+        "Atualizações": "Updates",
+        "Procurar atualizações automaticamente": "Check for updates automatically",
+        "Última verificação: %@": "Last checked: %@",
+        "Ainda não verificado": "Not checked yet",
+        "Procurar agora": "Check Now",
+        "As atualizações automáticas estão desativadas nesta versão de desenvolvimento.": "Automatic updates are off in this development build.",
+        "Versão de desenvolvimento: sessão, definições e widget próprios, sem atualizações automáticas.":
+            "Development build: its own session, settings and widget, with no automatic updates.",
 
         // Model
         "Tendência a subir": "Trending up",
@@ -161,6 +193,7 @@ enum L10n {
         "Atualizar a cada": "Refresh every",
         "%@min": "%@min",
         "Avisar falhas técnicas": "Notify technical problems",
+        "info.updates": "Once a day the app checks GitHub for a newer version. It only downloads the list of versions: no health data, account details or system information are sent. When there is one, a notice appears in the panel (and a notification, if notifications are on); you choose when to install. Updates are verified with a digital signature before installing. Update windows use the app's language from the next launch after changing it.",
         "info.language": "Automatic follows the macOS language: Portuguese if macOS is in Portuguese, English otherwise. The change applies immediately.",
         "info.launch": "The app opens by itself when you log in to the Mac, with the panel closed. macOS may ask you to approve it in System Settings → General → Login Items.",
         "info.refresh": "The sensor sends a value every 5min. With 5min you see more recent readings, but the app makes twice as many requests to CareLink. When a reading gets old, the app refreshes right away, at most every 2min.",
@@ -278,6 +311,7 @@ enum L10n {
 
     /// Portuguese text for keys that are identifiers rather than source sentences.
     static let portugueseInfo: [String: String] = [
+        "info.updates": "Uma vez por dia, a app procura no GitHub uma versão mais recente. Só descarrega a lista de versões: não envia dados de saúde, da conta nem do sistema. Se houver uma, aparece um aviso no painel (e uma notificação, se as notificações estiverem ligadas); és tu que escolhes quando instalar. Cada atualização é verificada com uma assinatura digital antes de ser instalada. As janelas de atualização usam o idioma da app a partir do arranque seguinte a uma mudança.",
         "info.language": "Automático segue o idioma do macOS: português se o macOS estiver em português, inglês nos restantes casos. A alteração aplica-se logo.",
         "info.launch": "A app abre sozinha quando inicias sessão no Mac, com o painel fechado. O macOS pode pedir para aprovares em Definições do Sistema → Geral → Itens de início de sessão.",
         "info.refresh": "O sensor envia um valor a cada 5min. Com 5min vês leituras mais recentes, mas a app faz o dobro dos pedidos ao CareLink. Quando a leitura fica antiga, a app atualiza logo, no máximo a cada 2min.",

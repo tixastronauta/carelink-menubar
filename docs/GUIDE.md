@@ -10,6 +10,7 @@ User and developer reference for CareLink Menubar 0.3. For a quick overview see 
 - [Settings](#settings)
 - [Desktop widget](#desktop-widget)
 - [Notifications](#notifications)
+- [In-app updates](#in-app-updates)
 - [Data, privacy and consent](#data-privacy-and-consent)
 - [CareLink fields used](#carelink-fields-used)
 - [Validation status and known limitations](#validation-status-and-known-limitations)
@@ -19,7 +20,8 @@ User and developer reference for CareLink Menubar 0.3. For a quick overview see 
 
 ## First run
 
-1. Build and open `build/CareLink Menubar.app` (see the README). It can be moved to Applications.
+1. Install `CareLink Menubar` from the DMG into Applications, or build and open the development
+   variant `build/CareLink Menubar Dev.app` (see [Development](#development)).
 2. Read and accept the consent window. Nothing is read from CareLink before you accept; **Quit**
    closes the app. The text can be read in Portuguese or English.
 3. Click **Sign in to CareLink** and authenticate on the official European CareLink page, shown in
@@ -90,12 +92,12 @@ Less obvious options have an ⓘ button: hover for a tooltip, click for the full
 
 | Tab | Options |
 | --- | ------- |
-| **General** | Language: Automatic (macOS), Português or English, applied immediately. Open at Mac login (`SMAppService`; the panel stays closed on login launches). Refresh every 5 or 10 min. Widget: show data in the desktop widget. Notifications: technical problems. |
+| **General** | Language: Automatic (macOS), Português or English, applied immediately. Open at Mac login (`SMAppService`; the panel stays closed on login launches). Refresh every 5 or 10 min. Widget: show data in the desktop widget. Notifications: technical problems and new versions. |
 | **Display** | Colour outside the target range, trend arrow and sparkline in the menu bar. Panel elements: time in range, average/CV/GMI, SmartGuard, consumables, sensor messages, connection messages. Old-reading and CareLink errors are always shown. |
 | **Chart** | Target range: manual limits (50–120 and 120–300 mg/dL, default 70–180), or the pump's alert limits (`limits[0]`). Band, out-of-range dots, boluses and meals, SmartGuard auto corrections. |
 | **Account** | Status card (connected with the account e-mail or user name, expired, signed out, signing in), last update, Sign In / Sign Out (with confirmation). |
 | **Advanced** | Diagnostic mode, Open Logs Folder, Delete Logs, Copy Payload Structure. |
-| **About** | Version, license, source code on GitHub, original project, consent date and **Withdraw Consent…**. |
+| **About** | Version, updates (check automatically, on by default; last check; **Check Now**), license, source code on GitHub, original project, consent date and **Withdraw Consent…**. |
 
 ## Desktop widget
 
@@ -135,7 +137,7 @@ in Notification Center.
 
 ## Notifications
 
-Technical notifications only, never glucose values or glucose alarms. They can be turned off in
+Technical notifications and new-version notices only, never glucose values or glucose alarms. They can be turned off in
 Settings → General. Clicking one opens the panel.
 
 | Notification | When |
@@ -144,15 +146,40 @@ Settings → General. Clicking one opens the panel.
 | No new readings | Reading older than 30 min, only right after a successful fetch, to avoid false alarms after sleep |
 | Sensor ending | When entering the under-24h and the under-6h levels |
 | Infusion set ending | When entering the under-12h and the under-2h levels |
+| New version available | Once per version found by a scheduled update check; clicking it opens the update window |
 
 The last notified sensor and infusion set levels persist, so relaunching does not repeat them.
 They re-arm after a change.
+
+## In-app updates
+
+Release builds update themselves with [Sparkle](https://sparkle-project.org) 2. From 0.3.3 on;
+earlier versions have to install 0.3.3 from the DMG once.
+
+- **Checks:** once a day, on by default (Settings → About → Updates, where **Check Now** is too).
+  A check only downloads `appcast.xml`, the newest release's feed, from GitHub Releases. It sends
+  no health data, account details or system profile (`SUEnableSystemProfiling` off), and it starts
+  only after consent.
+- **Notice, not interruption:** a scheduled check never opens a window by itself (Sparkle's gentle
+  reminders). A new version shows a notice at the top of the panel and, if notifications are on, a
+  notification. Either opens Sparkle's window with the release notes and **Skip This Version**,
+  **Remind Me Later** and **Install Update**; installing replaces the app and relaunches it.
+- **Integrity:** the update archive and the feed itself are signed with an EdDSA key. The app
+  carries the public key (`SUPublicEDKey`), requires a signed feed (`SURequireSignedFeed`) and
+  verifies the archive before extracting it. Sparkle also checks that the new app's code signature
+  is valid.
+- **Language:** Sparkle's windows use its own translations (European Portuguese included). The app
+  sets its language for them at launch, so after changing the language in Settings they follow
+  from the next launch.
+- **Development builds** never check for or install updates (see [Development](#development)).
 
 ## Data, privacy and consent
 
 - **Network:** only MiniMed's European CareLink endpoints are used. `NetworkPolicy` allows a few
   GET endpoints and exactly two POST bodies: `display/message` (reads data) and the OAuth token
-  request (sign-in and refresh). Redirects are refused.
+  request (sign-in and refresh). Redirects are refused. Separately, release builds fetch the
+  update feed and archives from GitHub (see [In-app updates](#in-app-updates)); that traffic
+  carries no health data.
 - **Tokens:** stored in the login Keychain only (`CredentialVault`), never synchronised with iCloud,
   never logged.
 - **Consent:** the first launch shows a blocking consent window. It shows again whenever
@@ -251,8 +278,10 @@ tokens.
 ## Development
 
 ```sh
-# Build -> build/CareLink Menubar.app (universal, signed)
+# Development variant -> build/CareLink Menubar Dev.app (universal, signed)
 python3 tools/build-menubar.py
+# Release variant -> build/CareLink Menubar.app (what the release workflow builds)
+python3 tools/build-menubar.py --release
 
 # Synthetic checks (see CLAUDE.md for the full commands)
 xcrun swiftc -swift-version 5 -module-cache-path build/module-cache \
@@ -266,6 +295,35 @@ xcrun swiftc tools/make-icon.swift -o build/make-icon && build/make-icon assets
 # Python prototype tests
 .venv/bin/python -m unittest discover -s tests -v
 ```
+
+### Development and release builds
+
+The installed release and a development build run side by side. The build script makes a
+**development variant** by default and the **release variant** only with `--release`:
+
+| | Release | Development |
+| --- | --- | --- |
+| App | `CareLink Menubar` (`local.tcx.carelink.menu`) | `CareLink Menubar Dev` (`local.tcx.carelink.menu.dev`) |
+| Icon and marks | standard | orange icon with a "DEV" band, "DEV" in the menu bar and panel |
+| Preferences, consent | own UserDefaults domain | own UserDefaults domain |
+| Keychain session | `local.tcx.carelink.menu.oauth.eu` | `local.tcx.carelink.menu.dev.oauth.eu` |
+| App Group, widget | `<Team>.local.tcx.carelink.menu`, "CareLink" | `<Team>.local.tcx.carelink.menu.dev`, "CareLink Dev" |
+| Widget URL, logs | `carelinkmenu://`, `~/Library/Logs/CareLink Menubar` | `carelinkmenu-dev://`, `~/Library/Logs/CareLink Menubar Dev` |
+| Updates | Sparkle, daily | none |
+
+`macos/AppVariant.swift` holds these identifiers; the build writes `CareLinkVariant` into both
+Info.plists. Each variant signs in separately, so there are two CareLink sessions on the account;
+they never share tokens (refresh tokens rotate, so sharing would sign one of them out). Whether
+CareLink limits concurrent sessions is not verified yet.
+
+Day to day: develop with the Dev build, merge, tag; the installed release then updates itself like
+anyone else's.
+
+**Testing an update locally** (development variant, nothing published): build an "old" and a "new"
+version with `CARELINK_VERSION=<x.y.z>` and `CARELINK_TEST_FEED_URL=http://127.0.0.1:<port>/appcast.xml`,
+zip the new one, sign it and the feed with `build/deps/Sparkle-*/bin/sign_update --account
+carelink-menubar`, generate the feed with `tools/appcast.py`, serve the folder with
+`python3 -m http.server`, and run the old build.
 
 ### Code and build notes
 
@@ -291,7 +349,13 @@ xcrun swiftc tools/make-icon.swift -o build/make-icon && build/make-icon assets
 - **Panel arrow:** the panel is an `NSPopover` with the system `menu` material. Its arrow cannot be
   tinted, so it is hidden with the undocumented `shouldHideAnchor` key, only when supported.
 - **Icon:** `assets/AppIcon.icns` is original artwork drawn by `tools/make-icon.swift`, with no
-  MiniMed branding.
+  MiniMed branding. `build/make-icon assets dev` draws the development icon (`AppIcon-Dev.icns`).
+- **Sparkle:** the build downloads Sparkle's release archive once into `build/deps`, checks it
+  against the SHA-256 pinned in `tools/build-menubar.py`, links `Sparkle.framework` with an
+  `@executable_path/../Frameworks` rpath and signs its helpers inside-out (never `--deep`).
+  `CFBundleVersion` is derived from the version (0.3.3 → 303) because Sparkle compares it.
+  `tools/appcast.py` (tested in `tests/test_appcast.py`) writes the feed. Sparkle's licence (MIT) is
+  bundled as `Sparkle-LICENSE.txt` and named in `NOTICE.txt`.
 
 ## Distribution
 
@@ -306,14 +370,27 @@ xcrun swiftc tools/make-icon.swift -o build/make-icon && build/make-icon assets
 
 ### Publishing a release
 
-1. Update the version in `tools/build-menubar.py` (`CFBundleShortVersionString` and
-   `CFBundleVersion`) and the notes in `.github/release-notes.md` if needed.
-2. Commit, then tag and push: `git tag -a v0.3.1 -m "CareLink Menubar 0.3.1" && git push origin v0.3.1`.
+1. Update `VERSION` in `tools/build-menubar.py` (the build number follows from it) and add a
+   `## <version>` section to `docs/HISTORY.md`: it becomes the update notes shown in the app.
+   Update `.github/release-notes.md` if needed.
+2. Commit, then tag and push: `git tag -a v0.3.3 -m "CareLink Menubar 0.3.3" && git push origin v0.3.3`.
 3. `.github/workflows/release.yml` then runs on a macOS runner:
-   - builds the app;
+   - builds the release variant;
    - packages `CareLink-Menubar.dmg` and its SHA-256;
-   - creates the GitHub release with the install notes.
-4. The asset always has the same name, so `https://github.com/tixastronauta/carelink-menubar/releases/latest/download/CareLink-Menubar.dmg` always points to the newest version.
+   - zips the app as `CareLink-Menubar.zip`, signs it with the `SPARKLE_ED_PRIVATE_KEY` secret,
+     writes `appcast.xml` with `tools/appcast.py`, signs the feed and verifies it (the run fails
+     if the secret is missing or the tag does not match the app version);
+   - creates the GitHub release with the install notes and all four files.
+4. The assets always have the same names, so `https://github.com/tixastronauta/carelink-menubar/releases/latest/download/CareLink-Menubar.dmg`
+   always points to the newest version, and installed apps read `…/latest/download/appcast.xml`.
+
+**Update signing key:** an EdDSA key pair made with Sparkle's `generate_keys --account
+carelink-menubar`. The private key lives in the maintainer's login Keychain and in the
+`SPARKLE_ED_PRIVATE_KEY` repository secret, with an offline backup (1Password); it must never be
+committed. The workflow derives the public key from the secret (`tools/sparkle-public-key.swift`)
+and stops if it differs from the app's `SUPublicEDKey`.
+The public key is `SPARKLE_PUBLIC_KEY` in `tools/build-menubar.py`. Losing the private key, or
+changing the public key, means installed apps can no longer update themselves.
 
 Running the workflow manually ("Run workflow") builds the DMG as a downloadable artifact without
 publishing a release, which is useful for testing.
@@ -327,7 +404,7 @@ publishing a release, which is useful for testing.
 - Builds are never notarized without a paid Apple Developer membership. Users approve the first
   launch in System Settings → Privacy & Security → **Open Anyway**.
 
-To build a DMG locally: `python3 tools/build-menubar.py && ./tools/make-dmg.sh`.
+To build a DMG locally: `python3 tools/build-menubar.py --release && ./tools/make-dmg.sh`.
 
 ### Website
 

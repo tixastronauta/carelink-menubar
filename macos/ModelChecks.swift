@@ -157,6 +157,18 @@ struct ModelChecks {
         L10n.choice = .portuguese
         precondition(tr("info.tir").hasPrefix("Percentagem das últimas 24h"))
         precondition(tr("há %@h %@min", "2", "5") == "há 2h 5min")
-        print("PASS: snapshot values, timezone parsing, stale/future data, missing fields, unknown units, trend, refresh interval, configurable interval, glucose range, reading age, time until refresh, stale reasons, early stale refresh, retry after failure, time in range, SmartGuard, connection, sensor status, technical alerts, consumable life, trend aliases, glucose stats, effective target, sparkline, Portuguese/English text, overlap and timeout")
+        // Sparkle's windows follow the app's language choice (AppleLanguages), or macOS when automatic.
+        precondition(AppLanguage.portuguese.bundleLanguages == ["pt-PT"] && AppLanguage.english.bundleLanguages == ["en"])
+        precondition(AppLanguage.system.bundleLanguages == nil)
+        let suite = "carelink.checks.\(UUID().uuidString)"
+        let scratch = UserDefaults(suiteName: suite)!
+        scratch.set("en", forKey: "language")
+        AppLanguage.applyToBundles(defaults: scratch)
+        precondition(scratch.stringArray(forKey: "AppleLanguages") == ["en"])
+        scratch.set("system", forKey: "language")
+        AppLanguage.applyToBundles(defaults: scratch)
+        precondition(scratch.persistentDomain(forName: suite)?["AppleLanguages"] == nil)
+        scratch.removePersistentDomain(forName: suite)
+        print("PASS: snapshot values, timezone parsing, stale/future data, missing fields, unknown units, trend, refresh interval, configurable interval, glucose range, reading age, time until refresh, stale reasons, early stale refresh, retry after failure, time in range, SmartGuard, connection, sensor status, technical alerts, consumable life, trend aliases, glucose stats, effective target, sparkline, Portuguese/English text, bundle language, overlap and timeout")
     }
 }

@@ -355,6 +355,7 @@ struct AdvancedSettings: View {
 
 struct AboutSettings: View {
     @ObservedObject var prefs: Preferences
+    @ObservedObject var updater: AppUpdater
     var onWithdrawConsent: () -> Void = {}
     private var version: String {
         let info = Bundle.main.infoDictionary
@@ -365,7 +366,7 @@ struct AboutSettings: View {
     static let projectURL = URL(string: "https://github.com/tixastronauta/carelink-menubar")!
     var body: some View {
         Pane {
-            Section("CareLink Menubar") {
+            Section(AppVariant.current.displayName) {
                 LabeledContent(tr("Versão"), value: version)
                 LabeledContent(tr("Licença"), value: "AGPL-3.0")
                 HStack {
@@ -374,6 +375,22 @@ struct AboutSettings: View {
                     Link(tr("Projeto original"), destination: URL(string: "https://github.com/ondrej1024/carelink-python-client")!)
                 }
                 Caption(tr("App não oficial, sem afiliação à MiniMed (antiga Medtronic Diabetes). Apenas leitura: não controla a bomba nem substitui a app MiniMed. Confirma sempre os valores na app oficial."))
+            }
+            Section(tr("Atualizações")) {
+                if updater.isAvailable {
+                    Toggle(isOn: Binding(get: { updater.automaticallyChecks }, set: { updater.automaticallyChecks = $0 })) {
+                        InfoLabel(tr("Procurar atualizações automaticamente"), info: tr("info.updates"))
+                    }
+                    HStack {
+                        Text(updater.lastCheck.map {
+                            tr("Última verificação: %@", $0.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(L10n.locale)))
+                        } ?? tr("Ainda não verificado")).foregroundStyle(.secondary)
+                        Spacer()
+                        Button(tr("Procurar agora")) { updater.showUpdate() }
+                    }
+                } else {
+                    Caption(tr("As atualizações automáticas estão desativadas nesta versão de desenvolvimento."))
+                }
             }
             Section(tr("Consentimento")) {
                 LabeledContent(tr("Aceite em"), value: Consent.acceptedAt.map {
