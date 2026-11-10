@@ -11,7 +11,7 @@ communication, required test runs) are mandatory. Keep both files consistent.
 
 CareLink Menubar: a native macOS 14+ menu bar app (Swift/SwiftUI, no Xcode project) showing
 glucose, trend, active insulin and a history chart from the European MiniMed CareLink
-cloud. Standalone since 0.2; current version 0.3.2 (set in `tools/build-menubar.py`). The Python package `carelink_proto/` is the earlier
+cloud. Standalone since 0.2; current version 0.3.3 (`VERSION` in `tools/build-menubar.py`). The Python package `carelink_proto/` is the earlier
 prototype, preserved but no longer called by the app; `vendor/` (git-ignored) holds the
 upstream AGPL client it was derived from.
 
@@ -22,27 +22,30 @@ upstream AGPL client it was derived from.
 .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/python -m unittest tests.test_prototype.<Class>.<test_name>   # single test
 
-# Build the universal app -> build/CareLink Menubar.app
+# Build the universal app. Default: development variant -> build/CareLink Menubar Dev.app
+# (own bundle ID, Keychain session, App Group, widget, logs; no updates), which runs beside
+# the installed release. --release: release variant -> build/CareLink Menubar.app (Sparkle).
 # Signs with a valid "Apple Development" identity (has a Team ID, so Keychain
 # "Always Allow" survives rebuilds), else ad-hoc.
 # CARELINK_SIGN_IDENTITY overrides. Without a Team ID each rebuild re-prompts once.
 python3 tools/build-menubar.py
+python3 tools/build-menubar.py --release
 
-# Package build/CareLink-Menubar.dmg (releases: push a v* tag; see docs/GUIDE.md)
+# Package build/CareLink-Menubar.dmg from the release build (releases: push a v* tag; see docs/GUIDE.md)
 ./tools/make-dmg.sh
 
-# Regenerate the app icon (assets/AppIcon.icns, committed; the build only copies it)
-xcrun swiftc tools/make-icon.swift -o build/make-icon && build/make-icon assets
+# Regenerate the app icons (assets/AppIcon.icns and AppIcon-Dev.icns, committed; the build only copies them)
+xcrun swiftc tools/make-icon.swift -o build/make-icon && build/make-icon assets && build/make-icon assets dev
 
 # Swift checks: standalone executables (each check file has its own @main)
 S="xcrun swiftc -swift-version 5 -module-cache-path build/module-cache"
 $S macos/Localization.swift macos/Model.swift macos/ModelChecks.swift -o build/model-checks && ./build/model-checks
-$S macos/Localization.swift macos/Model.swift macos/NativeCore.swift macos/Diagnostics.swift macos/NativeChecks.swift -o build/native-checks && ./build/native-checks
-$S macos/Localization.swift macos/Model.swift macos/NativeCore.swift macos/Diagnostics.swift macos/CredentialVault.swift macos/NativeAPI.swift \
+$S macos/AppVariant.swift macos/Localization.swift macos/Model.swift macos/NativeCore.swift macos/Diagnostics.swift macos/NativeChecks.swift -o build/native-checks && ./build/native-checks
+$S macos/AppVariant.swift macos/Localization.swift macos/Model.swift macos/NativeCore.swift macos/Diagnostics.swift macos/CredentialVault.swift macos/NativeAPI.swift \
    macos/WebLogin.swift macos/Store.swift macos/NativeIntegrationChecks.swift \
    -o build/native-integration-checks && ./build/native-integration-checks
-$S macos/Localization.swift macos/Model.swift macos/WidgetShared.swift macos/WidgetChecks.swift -o build/widget-checks && ./build/widget-checks
-$S macos/Localization.swift macos/Model.swift macos/NativeCore.swift macos/CredentialVault.swift macos/VaultChecks.swift \
+$S macos/AppVariant.swift macos/Localization.swift macos/Model.swift macos/WidgetShared.swift macos/WidgetChecks.swift -o build/widget-checks && ./build/widget-checks
+$S macos/AppVariant.swift macos/Localization.swift macos/Model.swift macos/NativeCore.swift macos/CredentialVault.swift macos/VaultChecks.swift \
    -o build/vault-checks && ./build/vault-checks   # touches the real Keychain with a synthetic, unique service
 ```
 
@@ -66,6 +69,17 @@ user-facing string must go through `tr()` and get an English entry; numbers and 
 The app sources compiled by `tools/build-menubar.py` are listed explicitly in that
 script (`*Checks.swift` and `NativeLiveCheck.swift` are excluded). Add new app files there.
 
+- `AppVariant.swift`: release vs development identifiers (Keychain service, URL scheme, logs,
+  display name), from the `CareLinkVariant` Info.plist key; no key means release. Never hardcode
+  these identifiers elsewhere: both variants must stay fully separate.
+- `Updates.swift`: `AppUpdater`, Sparkle 2 with gentle reminders (release variant only, started after
+  consent). Scheduled checks never open a window: they set `PanelState.updateVersion` (panel
+  notice) and post a notification; the user opens Sparkle's window from there. Only the
+  release build links a feed (`SUFeedURL`, signed with `SURequireSignedFeed`). `tools/appcast.py`
+  writes the feed in the release workflow (tests: `tests/test_appcast.py`). Sparkle is linked as
+  a binary framework downloaded and hash-checked by the build; `Updates.swift` is the only file
+  that imports it, so checks and screenshots compile without it.
+
 - `NativeCore.swift`: pure logic shared by the app and the checks. `Endpoints` (fixed
   EU URLs), `NetworkPolicy.allows` (allowlist of GET endpoints and the only two
   permitted POST bodies: display/message and OAuth token), `Tokens`, OAuth/PKCE helpers
@@ -85,7 +99,7 @@ script (`*Checks.swift` and `NativeLiveCheck.swift` are excluded). Add new app f
   in-flight work so stale results are dropped. Preserve those checks.
 - `Model.swift`: `Snapshot`/`Reading`/`ChartPoint` view models and `RefreshGate`.
 - `App.swift` / `PopoverView.swift`: NSStatusItem, popover and SwiftUI chart.
-- `Notifications.swift`: `Notifier` (UserNotifications) for technical alerts only; the
+- `Notifications.swift`: `Notifier` (UserNotifications) for technical alerts and new-version notices; the
   once-per-episode logic is `TechnicalAlerts` in `Model.swift`, fed from `CareLinkStore.tick`.
 - `SettingsView.swift` / `LaunchAtLogin.swift` / `Preferences.swift`: settings window
   as toolbar tabs (`SettingsTabController`, one SwiftUI `Pane` per tab; the window resizes
@@ -96,7 +110,8 @@ script (`*Checks.swift` and `NativeLiveCheck.swift` are excluded). Add new app f
 
 Widget (`WidgetExtension.swift`, built into `Contents/PlugIns/CareLinkWidget.appex` by the build
 script; needs a Team ID, skipped when ad-hoc). The app writes `WidgetSummary` (`WidgetShared.swift`)
-to the App Group container and calls `WidgetCenter.reloadAllTimelines()`; the widget only reads it
+to the App Group container and calls `WidgetCenter.reloadTimelines(ofKind: SharedStore.widgetKind)`
+(only when the data changed); the widget only reads it
 (no tokens, no network). Hard-won rules:
 - Link the extension with `-e _NSExtensionMain`; the Swift `@main` entry crashes in ExtensionFoundation.
 - The App Group must be prefixed with the signature's real Team ID. The ID in parentheses in an
