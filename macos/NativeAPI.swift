@@ -54,6 +54,10 @@ final class NativeAPI {
             Diagnostics.record(method:method, url:url, status:response.statusCode, request:body,
                                response:try? JSONSerialization.jsonObject(with:data))
         }
+        if url == Endpoints.display, response.statusCode == 206,
+           ((try? JSONSerialization.jsonObject(with:data)) as? [String:Any])?["message"] as? String == "Upgrade application" {
+            throw CareLinkError.outdatedClient
+        }
         if (url == Endpoints.token && response.statusCode == 400) || response.statusCode == 401 || response.statusCode == 403 { throw CareLinkError.authentication }
         guard response.statusCode == 200, data.count < 10_000_000 else { throw CareLinkError.network }
         do { return try JSONSerialization.jsonObject(with:data) }
@@ -108,6 +112,7 @@ final class NativeAPI {
             guard let patients = try await request(Endpoints.patients,token:tokens.accessToken) as? [[String:Any]],
                   patients.count == 1, let patient = patients.first?["username"] as? String else { throw CareLinkError.multiplePatients }
             body["role"] = "carepartner"; body["patientId"] = patient
+            body["appVersion"] = ClientIdentity.appVersion; body["os"] = ClientIdentity.os
         } else if !["PATIENT","PATIENT_OUS"].contains(role) { throw CareLinkError.configuration }
         guard let raw = try await request(Endpoints.display,method:"POST",body:body,token:tokens.accessToken) as? [String:Any] else { throw CareLinkError.schema }
         lastShape = Diagnostics.shape(raw)

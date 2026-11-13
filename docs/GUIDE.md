@@ -177,7 +177,11 @@ earlier versions have to install 0.3.3 from the DMG once.
 
 - **Network:** only MiniMed's European CareLink endpoints are used. `NetworkPolicy` allows a few
   GET endpoints and exactly two POST bodies: `display/message` (reads data) and the OAuth token
-  request (sign-in and refresh). Redirects are refused. Separately, release builds fetch the
+  request (sign-in and refresh). The `display/message` body may hold only `username`, `role`,
+  `patientId` and, for care-partner reads, the fixed client declaration `appVersion` "3.8" and
+  `os` "android": since October 2026 CareLink answers care-partner reads without it with HTTP 206
+  "Upgrade application" (shown as an "update the app" error). Patient reads do not send it.
+  Redirects are refused. Separately, release builds fetch the
   update feed and archives from GitHub (see [In-app updates](#in-app-updates)); that traffic
   carries no health data.
 - **Tokens:** stored in the login Keychain only (`CredentialVault`), never synchronised with iCloud,
@@ -245,6 +249,8 @@ diagnostic logs.
 - sign-in with the native flow;
 - session persistence across relaunches;
 - reading and display of all confirmed fields above;
+- a care-partner account linked to one patient (sign-in, read with the `appVersion`/`os`
+  declaration, panel display), after the 206 "Upgrade application" fix;
 - launch-at-login registration;
 - desktop widget in all three sizes;
 - the user interface in both languages.
@@ -254,7 +260,6 @@ diagnostic logs.
 - other pumps and regions;
 - mmol/L accounts;
 - MFA;
-- care-partner accounts;
 - running on an Intel Mac (the universal build compiles).
 
 **Synthetic checks** (`macos/*Checks.swift`) cover:
@@ -262,6 +267,7 @@ diagnostic logs.
 - parsing, DST and units;
 - PKCE and OAuth callback validation;
 - the network allowlist and token rotation;
+- the care-partner request body and the 206 "Upgrade application" error;
 - cancellation and logout races;
 - refresh scheduling and alert transitions;
 - diagnostics redaction;

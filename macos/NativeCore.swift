@@ -4,7 +4,7 @@ import Security
 
 // Protocol compatibility derived from ondrej1024/carelink-python-client (AGPL-3.0).
 enum CareLinkError: Error {
-    case authentication, configuration, schema, network, multiplePatients, keychain, cancelled
+    case authentication, configuration, schema, network, multiplePatients, keychain, cancelled, outdatedClient
     var message: String {
         switch self {
         case .authentication: return tr("A sessão expirou ou não foi aceite. Volta a entrar no CareLink.")
@@ -14,6 +14,7 @@ enum CareLinkError: Error {
         case .multiplePatients: return tr("Esta versão precisa de uma conta com exatamente um paciente associado.")
         case .keychain: return tr("Não foi possível aceder ao Porta-chaves. Autoriza o acesso à sessão desta app.")
         case .cancelled: return tr("Início de sessão cancelado.")
+        case .outdatedClient: return tr("O CareLink deixou de aceitar a versão de cliente que esta app indica. É preciso atualizar a app.")
         }
     }
 }
@@ -28,13 +29,23 @@ enum Endpoints {
     static let authorize = URL(string:"https://carelink-login.minimed.eu/authorize")!
 }
 
+/// Client version declared in the care partner display/message body. Since October 2026 the server
+/// answers HTTP 206 {"message":"Upgrade application"} to care partner reads without it (community
+/// reports: below 3.7 is rejected). Patient reads work without it and are left unchanged.
+enum ClientIdentity {
+    static let appVersion = "3.8"
+    static let os = "android"
+}
+
 enum NetworkPolicy {
     static func allows(method: String, url: URL, body: [String: Any]?) -> Bool {
         if method == "GET" { return [Endpoints.discovery, Endpoints.sso, Endpoints.user, Endpoints.patients].contains(url) }
         guard method == "POST", let body else { return false }
         if url == Endpoints.display {
-            return Set(body.keys).isSubset(of:["username","role","patientId"])
+            return Set(body.keys).isSubset(of:["username","role","patientId","appVersion","os"])
                 && body["username"] is String && ["patient","carepartner"].contains(body["role"] as? String ?? "")
+                && (body["appVersion"] == nil || body["appVersion"] as? String == ClientIdentity.appVersion)
+                && (body["os"] == nil || body["os"] as? String == ClientIdentity.os)
         }
         if url == Endpoints.token {
             return Set(body.keys).isSubset(of:["grant_type","client_id","code","redirect_uri","code_verifier","refresh_token"])

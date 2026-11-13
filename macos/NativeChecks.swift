@@ -113,6 +113,12 @@ import Foundation
         precondition(NetworkPolicy.allows(method:"GET", url:Endpoints.user, body:nil))
         precondition(NetworkPolicy.allows(method:"POST", url:Endpoints.display, body:["username":"synthetic", "role":"patient"]))
         precondition(!NetworkPolicy.allows(method:"POST", url:Endpoints.display, body:["username":"synthetic", "role":"patient", "bolus":1]))
+        precondition(NetworkPolicy.allows(method:"POST", url:Endpoints.display, body:["username":"synthetic", "role":"carepartner",
+            "patientId":"synthetic-patient", "appVersion":ClientIdentity.appVersion, "os":ClientIdentity.os]))
+        precondition(!NetworkPolicy.allows(method:"POST", url:Endpoints.display, body:["username":"synthetic", "role":"carepartner",
+            "appVersion":"9.9", "os":ClientIdentity.os]), "Only the fixed client version may be declared")
+        precondition(!NetworkPolicy.allows(method:"POST", url:Endpoints.display, body:["username":"synthetic", "role":"carepartner",
+            "appVersion":ClientIdentity.appVersion, "os":"ios"]), "Only the fixed client OS may be declared")
         precondition(!NetworkPolicy.allows(method:"DELETE", url:Endpoints.user, body:nil))
         precondition(!NetworkPolicy.allows(method:"GET", url:URL(string:"https://example.com")!, body:nil))
         let stored = Tokens(accessToken:"synthetic", refreshToken:"old", clientID:"client")

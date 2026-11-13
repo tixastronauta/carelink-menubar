@@ -113,6 +113,7 @@ enum L10n {
         "Esta versão precisa de uma conta com exatamente um paciente associado.": "This version needs an account with exactly one linked patient.",
         "Não foi possível aceder ao Porta-chaves. Autoriza o acesso à sessão desta app.": "Could not access the Keychain. Allow this app to access its session.",
         "Início de sessão cancelado.": "Sign-in cancelled.",
+        "O CareLink deixou de aceitar a versão de cliente que esta app indica. É preciso atualizar a app.": "CareLink no longer accepts the client version this app declares. The app needs an update.",
         "A consulta demorou demasiado. Tenta atualizar novamente.": "The request took too long. Try refreshing again.",
         "Não foi possível remover a sessão do Porta-chaves. Tenta Terminar sessão novamente.": "Could not remove the session from the Keychain. Try Sign Out again.",
         "Não foi possível alterar o arranque automático. Confirma em Definições do Sistema → Geral → Itens de início de sessão.":
