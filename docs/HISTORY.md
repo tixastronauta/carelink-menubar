@@ -97,3 +97,14 @@ Built in close iteration with daily use. Highlights:
   health data. It can be turned off in Settings → About.
 - **Development build:** developers can run a separate "CareLink Menubar Dev" next to the installed
   app, with its own session, settings and widget, and no automatic updates.
+
+## 0.3.4: care-partner accounts and smaller logs
+
+- **Care-partner accounts work again:** since October 2026 CareLink refuses care-partner readings
+  unless the app declares a recent client version, and the app showed a network error. It now
+  sends that declaration (care-partner readings only; patient readings are unchanged). If
+  CareLink raises the minimum again, the panel says the app needs an update instead of reporting
+  a network problem.
+- **Smaller diagnostic logs:** besides the 7-day retention, the diagnostic log folder is now capped
+  at 50 MB, with each day split into 10 MB files. Logs left in the folder used before 0.3.0
+  ("CareLink Menu") are now deleted too.

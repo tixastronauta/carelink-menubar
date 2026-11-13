@@ -19,7 +19,7 @@ import os
 import tarfile
 import urllib.request
 
-VERSION = "0.3.3"
+VERSION = "0.3.4"
 SPARKLE_VERSION = "2.10.1"
 SPARKLE_SHA256 = "1a856d2a9edb8e628de88121d7be04cf0e2167f8641650b78fca00b14244cf27"
 # EdDSA public key matching the private key in the release workflow secret SPARKLE_ED_PRIVATE_KEY
