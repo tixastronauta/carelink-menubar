@@ -208,11 +208,17 @@ earlier versions have to install 0.3.3 from the DMG once.
 Off by default. Turn it on in Settings → Advanced; it stays on until you turn it off.
 
 - **What it writes:** every CareLink request and response, as one JSON line per request, in
-  `~/Library/Logs/CareLink Menubar/`. The folder is mode 700 and the files 600, one `.jsonl` per day.
+  `~/Library/Logs/CareLink Menubar/` (`CareLink Menubar Dev/` for the development build). The folder
+  is mode 700 and the files 600, one `.jsonl` per day; a day over 10 MB continues in
+  `carelink-DAY-2.jsonl`, `-3`, and so on.
 - **What it hides:** tokens, OAuth codes, secrets and JWT-like values are always redacted, including
   camelCase keys.
-- **Clean-up:** files older than 7 days are deleted at launch, when the mode is turned on and once
-  a day while writing.
+- **Clean-up:** files older than 7 days are deleted, and the folder is capped at 50 MB (the oldest
+  files go first; the file being written is kept). This runs at launch, when the mode is turned on,
+  once a day and whenever a new file starts. Each refresh logs roughly 20 KB, so a 1-minute
+  refresh writes about 30 MB a day. The release build also deletes logs left in
+  `~/Library/Logs/CareLink Menu/`, the folder used before 0.3.0, at launch, with "Delete logs" and
+  on consent withdrawal.
 - **Copy Payload Structure:** copies only field names and types from the last reading, never
   values. Useful for sharing what CareLink sends without sharing health data.
 

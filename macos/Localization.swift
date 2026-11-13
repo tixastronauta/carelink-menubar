@@ -260,7 +260,7 @@ enum L10n {
         "Abrir pasta dos logs": "Open Logs Folder",
         "Apagar logs": "Delete Logs",
         "Copiar estrutura do payload": "Copy Payload Structure",
-        "info.diagnostics": "Writes every CareLink response to ~/Library/Logs/CareLink Menubar, on this Mac only. Useful while developing. Stays on until you turn it off, with a “Diagnostics” badge in the panel. Logs older than 7 days are deleted.",
+        "info.diagnostics": "Writes every CareLink response to ~/Library/Logs/CareLink Menubar, on this Mac only. Useful while developing. Stays on until you turn it off, with a “Diagnostics” badge in the panel. Logs older than 7 days are deleted, and the folder is capped at 50 MB.",
         "info.shape": "Copies only the field names and types of the last reading, without values. Useful to see which data CareLink sends. Available after a refresh.",
 
         // Consumable life
@@ -327,7 +327,7 @@ enum L10n {
         "info.points": "Marca com um ponto as leituras fora da faixa-alvo: laranja fora da faixa, vermelho abaixo de 54 mg/dL.",
         "info.markers": "Símbolos no fundo do gráfico: gota para bólus, garfo e faca para hidratos. Passa o rato por cima de um símbolo para ver a quantidade e a hora.",
         "info.autocorrections": "Pequenos bólus que o SmartGuard dá sozinho, muitas vezes por dia. Desliga para um gráfico mais limpo.",
-        "info.diagnostics": "Grava cada resposta do CareLink em ~/Library/Logs/CareLink Menubar, só neste Mac. Útil durante o desenvolvimento. Fica ligado até o desligares, com o aviso “Diagnóstico” no painel. Os logs com mais de 7 dias são apagados.",
+        "info.diagnostics": "Grava cada resposta do CareLink em ~/Library/Logs/CareLink Menubar, só neste Mac. Útil durante o desenvolvimento. Fica ligado até o desligares, com o aviso “Diagnóstico” no painel. Os logs com mais de 7 dias são apagados e a pasta fica limitada a 50 MB.",
         "info.diagnosticsbadge": "O modo diagnóstico está ligado: as respostas do CareLink estão a ser guardadas neste Mac. Desliga-o em Definições → Avançado.",
         "info.pumplimits": "Usa os limites de alerta de glicemia baixa e alta configurados na bomba, em vez dos limites manuais, e acompanha as alterações feitas na bomba. São limites de alerta, muitas vezes mais largos do que um alvo. O tempo na faixa usa sempre 70–180 mg/dL.",
         "info.stats": "Mostra a média, o coeficiente de variação e o GMI das últimas 24h por baixo do cartão do tempo na faixa. Passa o rato por cada valor para ver a explicação.",

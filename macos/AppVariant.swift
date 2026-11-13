@@ -20,6 +20,9 @@ enum AppVariant: String {
     var urlScheme: String { isDev ? "carelinkmenu-dev" : "carelinkmenu" }
     /// Folder under ~/Library/Logs for opt-in diagnostics.
     var logsFolder: String { displayName }
+    /// Logs folder used before 0.3.0 ("CareLink Menu"), when only the release existed. Its files are
+    /// no longer written; clean-up and consent withdrawal delete them.
+    var legacyLogsFolder: String? { isDev ? nil : "CareLink Menu" }
     /// Unified-log subsystem (status messages only, never values).
     var logSubsystem: String { isDev ? "local.tcx.carelink.menu.dev" : "local.tcx.carelink.menu" }
     /// Only the release checks for and installs updates; a development build must never be

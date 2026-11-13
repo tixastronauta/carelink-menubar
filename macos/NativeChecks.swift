@@ -103,6 +103,45 @@ import Foundation
         precondition(Set(shape) == ["patientData: object", "patientData.none: null", "patientData.on: boolean", "patientData.sgs: array",
                                "patientData.sgs[]: object", "patientData.sgs[].kind: string", "patientData.sgs[].sg: number"])
         precondition(!shape.contains { $0.contains(": x") || $0.contains("2") })
+        // Log rotation and clean-up, on synthetic files in a temporary folder.
+        let manager = FileManager.default
+        let logs = manager.temporaryDirectory.appendingPathComponent("carelink-diagnostics-check-\(UUID().uuidString)")
+        defer { try? manager.removeItem(at: logs) }
+        let line = Data(repeating: 0x61, count: 40) + Data([0x0A])
+        let today = Date()
+        for _ in 0..<6 { Diagnostics.write(line, day: "2026-01-02", in: logs, fileLimit: 100, totalLimit: 10_000, now: today) }
+        let chunks = Set(try manager.contentsOfDirectory(atPath: logs.path))
+        precondition(chunks == ["carelink-2026-01-02.jsonl", "carelink-2026-01-02-2.jsonl", "carelink-2026-01-02-3.jsonl"],
+                     "A full day file must roll over to a numbered chunk")
+        func names(_ folder: URL) -> Set<String> { Set((try? manager.contentsOfDirectory(atPath: folder.path)) ?? []) }
+        let attributes = try manager.attributesOfItem(atPath: logs.appendingPathComponent("carelink-2026-01-02.jsonl").path)
+        precondition((attributes[.posixPermissions] as? Int) == 0o600)
+        func stamp(_ name: String, _ age: TimeInterval) throws {
+            try manager.setAttributes([.modificationDate: today.addingTimeInterval(-age)],
+                                      ofItemAtPath: logs.appendingPathComponent(name).path)
+        }
+        try stamp("carelink-2026-01-02.jsonl", 3 * 3600); try stamp("carelink-2026-01-02-2.jsonl", 2 * 3600)
+        try stamp("carelink-2026-01-02-3.jsonl", 3600)
+        manager.createFile(atPath: logs.appendingPathComponent("carelink-2025-12-01.jsonl").path, contents: line)
+        try stamp("carelink-2025-12-01.jsonl", 8 * 24 * 3600)
+        manager.createFile(atPath: logs.appendingPathComponent("notes.txt").path, contents: Data(count: 500))
+        Diagnostics.prune(in: logs, now: today, totalLimit: 170, keep: logs.appendingPathComponent("carelink-2026-01-02-3.jsonl"))
+        precondition(names(logs) == ["carelink-2026-01-02-2.jsonl", "carelink-2026-01-02-3.jsonl", "notes.txt"],
+                     "Prune must drop expired files, then the oldest logs over the size cap, and ignore other files")
+        Diagnostics.prune(in: logs, now: today, totalLimit: 10, keep: logs.appendingPathComponent("carelink-2026-01-02-3.jsonl"))
+        precondition(names(logs) == ["carelink-2026-01-02-3.jsonl", "notes.txt"],
+                     "The file being written must survive the size cap")
+        let legacy = logs.appendingPathComponent("legacy")
+        try manager.createDirectory(at: legacy, withIntermediateDirectories: true)
+        manager.createFile(atPath: legacy.appendingPathComponent("carelink-2026-01-01.jsonl").path, contents: line)
+        Diagnostics.removeLogs(in: legacy, removeFolderIfEmpty: true)
+        precondition(!manager.fileExists(atPath: legacy.path), "An emptied legacy folder must be removed")
+        try manager.createDirectory(at: legacy, withIntermediateDirectories: true)
+        manager.createFile(atPath: legacy.appendingPathComponent("carelink-2026-01-01.jsonl").path, contents: line)
+        manager.createFile(atPath: legacy.appendingPathComponent("other.log").path, contents: line)
+        Diagnostics.removeLogs(in: legacy, removeFolderIfEmpty: true)
+        precondition(names(legacy) == ["other.log"], "Only .jsonl logs may be deleted")
+        precondition(AppVariant.release.legacyLogsFolder == "CareLink Menu" && AppVariant.dev.legacyLogsFolder == nil)
         let redirect = URL(string: "com.medtronic.carepartner:/sso")!
         let code = try OAuthFlow.code(from: URL(string: "com.medtronic.carepartner:/sso?code=abc&state=ok")!, redirect: redirect, state: "ok")
         precondition(code == "abc")
@@ -130,6 +169,6 @@ import Foundation
         precondition(stored.accountName == nil)
         let retained = try Tokens.response(["access_token":"new"], clientID:stored.clientID, previous:stored)
         precondition(retained.refreshToken == "old")
-        print("PASS: native normalization, optional device status, time in range, SmartGuard, connection, sensor/infusion status and time left, bolus and meal markers, pump limits, mmol plausibility, diagnostics redaction and shape, DST, schema rejection, OAuth state/callback/PKCE, read-only network policy and token rotation")
+        print("PASS: native normalization, optional device status, time in range, SmartGuard, connection, sensor/infusion status and time left, bolus and meal markers, pump limits, mmol plausibility, diagnostics redaction, shape, rotation, size cap and legacy clean-up, DST, schema rejection, OAuth state/callback/PKCE, read-only network policy and token rotation")
     }
 }

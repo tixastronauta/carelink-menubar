@@ -4,9 +4,14 @@ import Foundation
 /// shows a "Diagnostics" badge) each CareLink request is appended as a JSON line to ~/Library/Logs/CareLink Menubar ("CareLink Menubar Dev" for the development
 /// variant) with private permissions.
 /// Responses include health data and identity; tokens, codes and auth values are always redacted.
-/// Files older than 7 days are purged. Nothing here is ever written inside the repository.
+/// Files older than 7 days are purged, and the folder is capped at 50 MB: a day rolls over to numbered
+/// 10 MB chunks and the oldest files go first. Nothing here is ever written inside the repository.
 enum Diagnostics {
     static let retention: TimeInterval = 7 * 24 * 3600
+    /// Size of one log file before the day continues in a new numbered chunk.
+    static let fileLimit = 10 * 1024 * 1024
+    /// Total size of the log folder; the oldest files are deleted above it.
+    static let totalLimit = 50 * 1024 * 1024
     static let defaultsKey = "diagnosticsEnabled"
     /// Pre-2026-11-08 builds stored an expiry date; read once to migrate.
     private static let legacyKey = "diagnosticsUntil"
@@ -25,6 +30,11 @@ enum Diagnostics {
     static var directory: URL {
         FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent("Library/Logs/\(AppVariant.current.logsFolder)", isDirectory: true)
+    }
+    private static var legacyDirectory: URL? {
+        AppVariant.current.legacyLogsFolder.map {
+            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/\($0)", isDirectory: true)
+        }
     }
     static var isEnabled: Bool {
         get {
@@ -93,15 +103,28 @@ enum Diagnostics {
               var line = try? JSONSerialization.data(withJSONObject: entry, options: [.sortedKeys]) else { return }
         line.append(0x0A)
         let day = String(ISO8601DateFormatter().string(from: now).prefix(10))
-        queue.async { append(line, to: directory.appendingPathComponent("carelink-\(day).jsonl")) }
+        queue.async { write(line, day: day, in: directory, fileLimit: fileLimit, totalLimit: totalLimit, now: now) }
     }
-    private static func append(_ data: Data, to file: URL) {
+
+    /// Appends a line to the day's current chunk (`carelink-DAY.jsonl`, then `carelink-DAY-2.jsonl`...).
+    /// Starting a new chunk also enforces the folder's size cap. Runs on the diagnostics queue
+    /// (checks call it directly with small limits).
+    static func write(_ data: Data, day: String, in folder: URL, fileLimit: Int, totalLimit: Int, now: Date) {
         let manager = FileManager.default
         do {
-            try manager.createDirectory(at: directory, withIntermediateDirectories: true,
+            try manager.createDirectory(at: folder, withIntermediateDirectories: true,
                                         attributes: [.posixPermissions: 0o700])
+            var index = 1
+            var file: URL
+            while true {
+                file = folder.appendingPathComponent(index == 1 ? "carelink-\(day).jsonl" : "carelink-\(day)-\(index).jsonl")
+                guard let size = (try? manager.attributesOfItem(atPath: file.path))?[.size] as? Int else { break }
+                if size == 0 || size + data.count <= fileLimit { break }
+                index += 1
+            }
             if !manager.fileExists(atPath: file.path) {
                 manager.createFile(atPath: file.path, contents: nil, attributes: [.posixPermissions: 0o600])
+                prune(in: folder, now: now, totalLimit: totalLimit, keep: file)
             }
             let handle = try FileHandle(forWritingTo: file)
             defer { try? handle.close() }
@@ -112,37 +135,62 @@ enum Diagnostics {
         }
     }
 
+    /// Deletes `.jsonl` logs older than the retention period, then the oldest ones while the folder
+    /// is above `totalLimit`. `keep` (the file being written) is never deleted. Synchronous.
+    static func prune(in folder: URL, now: Date, totalLimit: Int, keep: URL? = nil) {
+        let manager = FileManager.default
+        let keys: Set<URLResourceKey> = [.contentModificationDateKey, .fileSizeKey]
+        guard let files = try? manager.contentsOfDirectory(at: folder, includingPropertiesForKeys: Array(keys)) else { return }
+        var logs: [(url: URL, modified: Date, size: Int)] = []
+        for file in files where file.pathExtension == "jsonl" {
+            let values = try? file.resourceValues(forKeys: keys)
+            let modified = values?.contentModificationDate ?? .distantPast
+            if now.timeIntervalSince(modified) > retention, file.lastPathComponent != keep?.lastPathComponent {
+                try? manager.removeItem(at: file)
+            } else {
+                logs.append((file, modified, values?.fileSize ?? 0))
+            }
+        }
+        var total = logs.reduce(0) { $0 + $1.size }
+        for log in logs.sorted(by: { ($0.modified, $0.url.lastPathComponent) < ($1.modified, $1.url.lastPathComponent) }) {
+            guard total > totalLimit else { break }
+            if log.url.lastPathComponent == keep?.lastPathComponent { continue }
+            if (try? manager.removeItem(at: log.url)) != nil { total -= log.size }
+        }
+    }
+
+    /// Deletes every `.jsonl` log in `folder`; other files are left alone.
+    static func removeLogs(in folder: URL, removeFolderIfEmpty: Bool = false) {
+        let manager = FileManager.default
+        guard let files = try? manager.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil) else { return }
+        for file in files where file.pathExtension == "jsonl" { try? manager.removeItem(at: file) }
+        if removeFolderIfEmpty, (try? manager.contentsOfDirectory(atPath: folder.path))?.isEmpty == true {
+            try? manager.removeItem(at: folder)
+        }
+    }
+
     static func enable(now: Date = Date()) {
         isEnabled = true
         purge(now: now)
     }
     static func disable() { isEnabled = false }
 
-    /// Deletes log files older than the retention period.
+    /// Applies retention and the size cap, and deletes logs left in the pre-0.3.0 folder.
     static func purge(now: Date = Date()) {
         queue.async {
-            let manager = FileManager.default
-            guard let files = try? manager.contentsOfDirectory(at: directory,
-                    includingPropertiesForKeys: [.contentModificationDateKey]) else { return }
-            for file in files where file.pathExtension == "jsonl" {
-                let modified = (try? file.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
-                if let modified, now.timeIntervalSince(modified) > retention { try? manager.removeItem(at: file) }
-            }
+            prune(in: directory, now: now, totalLimit: totalLimit)
+            if let legacyDirectory { removeLogs(in: legacyDirectory, removeFolderIfEmpty: true) }
         }
     }
-    /// Synchronous variant, used right before quitting.
+    /// Synchronous variant, used right before quitting (consent withdrawal).
     static func deleteAllNow() {
-        queue.sync {
-            let manager = FileManager.default
-            guard let files = try? manager.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) else { return }
-            for file in files where file.pathExtension == "jsonl" { try? manager.removeItem(at: file) }
-        }
+        queue.sync { deleteEverything() }
     }
     static func deleteAll() {
-        queue.async {
-            let manager = FileManager.default
-            guard let files = try? manager.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) else { return }
-            for file in files where file.pathExtension == "jsonl" { try? manager.removeItem(at: file) }
-        }
+        queue.async { deleteEverything() }
+    }
+    private static func deleteEverything() {
+        removeLogs(in: directory)
+        if let legacyDirectory { removeLogs(in: legacyDirectory, removeFolderIfEmpty: true) }
     }
 }
