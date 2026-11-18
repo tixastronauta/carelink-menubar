@@ -143,8 +143,8 @@ enum L10n {
         "Definições": "Settings",
         "Volta a entrar no CareLink": "Sign in to CareLink again",
         "Liga a tua conta CareLink": "Connect your CareLink account",
-        "Entra na página oficial do CareLink. A sessão fica guardada no Porta-chaves deste Mac.":
-            "Sign in on the official CareLink page. The session is stored in this Mac's Keychain.",
+        "Vais entrar na página oficial do CareLink. A app apenas consulta os teus dados, nunca os altera, e guarda-os só neste Mac.":
+            "You'll sign in on the official CareLink page. The app only reads your data, never changes it, and keeps it on this Mac only.",
         "A aguardar autenticação…": "Waiting for authentication…",
         "Entrar no CareLink": "Sign In to CareLink",
         "Tendência indisponível": "Trend unavailable",

@@ -49,8 +49,11 @@ User and developer reference for CareLink Menubar 0.3. For a quick overview see 
   - **Camera:** copies an image of the panel to the clipboard. The image has no header buttons, an
     opaque background, the current appearance and the screen's scale. The panel flashes briefly and
     the macOS screen-capture sound plays.
-  - **Refresh:** refreshes now.
+  - **Refresh:** refreshes now; a spinner takes its place while a refresh runs.
   - **Gear:** opens Settings.
+  - **Power:** quits the app.
+  - Camera and Refresh are hidden, not greyed out, while they cannot be used (signed out, signing
+    in, expired session, or no data yet).
 - **Value block:** glucose, trend arrow and unit. Next to it: active insulin, SmartGuard state,
   sensor reading age ("3min ago"), last update and next update ("in 9min"). Hovering an age shows
   the exact time.
@@ -188,8 +191,8 @@ The country list comes from CareLink's public discovery document (`supportedCoun
 in November 2026. The third region in that document, `CLINICAL` (clinical trials), is not supported
 and stays blocked by `NetworkPolicy`.
 
-- **Choosing:** the sign-in panel and Settings → Account (while signed out or expired) have an
-  **Account region** menu. It defaults to United States when the Mac's region is the US, and to
+- **Choosing:** a small globe menu next to the sign-in button, in the panel and in Settings →
+  Account (while signed out or expired), shows and changes the region. It defaults to United States when the Mac's region is the US, and to
   Europe and other countries otherwise. The choice is a UserDefaults preference, not health data.
 - **Session:** the region is saved with the tokens in the Keychain (`Tokens.region`); refresh and
   reads always use the saved session's region. Sessions saved before region support have no region field and

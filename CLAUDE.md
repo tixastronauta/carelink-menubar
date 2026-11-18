@@ -11,7 +11,7 @@ communication, required test runs) are mandatory. Keep both files consistent.
 
 CareLink Menubar: a native macOS 14+ menu bar app (Swift/SwiftUI, no Xcode project) showing
 glucose, trend, active insulin and a history chart from the MiniMed CareLink
-cloud (EU region, which covers most countries, and US region). Standalone since 0.2; current version 0.3.4 (`VERSION` in `tools/build-menubar.py`). The Python package `carelink_proto/` is the earlier
+cloud (EU region, which covers most countries, and US region). Standalone since 0.2; current version 0.3.5 (`VERSION` in `tools/build-menubar.py`). The Python package `carelink_proto/` is the earlier
 prototype, preserved but no longer called by the app; `vendor/` (git-ignored) holds the
 upstream AGPL client it was derived from.
 

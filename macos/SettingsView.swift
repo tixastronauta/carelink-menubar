@@ -293,9 +293,6 @@ struct AccountSettings: View {
                     }
                 }
                 .padding(.vertical, 6)
-                if state == .signedOut || state == .expired {
-                    RegionPicker(store: store)
-                }
                 HStack {
                     switch state {
                     case .signingIn:
@@ -307,8 +304,10 @@ struct AccountSettings: View {
                     case .expired:
                         Button(tr("Terminar sessão…"), role: .destructive) { onLogout() }
                         Spacer()
+                        RegionPicker(store: store)
                         Button(tr("Entrar novamente")) { onSignIn() }.buttonStyle(.borderedProminent)
                     case .signedOut:
+                        RegionPicker(store: store)
                         Spacer()
                         Button(tr("Entrar no CareLink")) { onSignIn() }.buttonStyle(.borderedProminent)
                     }

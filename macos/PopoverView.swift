@@ -308,7 +308,8 @@ struct CareLinkPopover: View {
                 }
                 Spacer()
                 if !exporting {
-                if store.isRefreshing { ProgressView().controlSize(.small) }
+                // Actions that cannot run right now are hidden, not greyed out.
+                if signedInWithData && store.snapshot != nil {
                 Button(action: { onCopy() }) {
                     Image(systemName: panel.justCopied ? "checkmark" : "camera")
                         .font(.system(size: 14, weight: .semibold))
@@ -317,20 +318,30 @@ struct CareLinkPopover: View {
                 .buttonStyle(.borderless)
                 .help(tr(panel.justCopied ? "Copiado" : "Copiar imagem do painel"))
                 .accessibilityLabel(tr("Copiar imagem do painel"))
-                .disabled(!signedInWithData || store.snapshot == nil)
+                }
+                if store.isRefreshing {
+                    ProgressView().controlSize(.small).frame(width: 20)
+                } else if store.isSignedIn && !store.isSigningIn && !store.requiresLogin {
                 Button(action: { store.refresh() }) {
                     Image(systemName: "arrow.clockwise").font(.system(size: 14, weight: .semibold))
+                        .frame(width: 20)
                 }
                 .buttonStyle(.borderless)
                 .help(tr("Atualizar agora"))
                 .accessibilityLabel(tr("Atualizar agora"))
-                .disabled(store.isRefreshing || !store.isSignedIn || store.isSigningIn || store.requiresLogin)
+                }
                 Button(action: { onSettings() }) {
                     Image(systemName: "gearshape").font(.system(size: 14, weight: .semibold))
                 }
                 .buttonStyle(.borderless)
                 .help(tr("Definições"))
                 .accessibilityLabel(tr("Definições"))
+                Button(action: { NSApp.terminate(nil) }) {
+                    Image(systemName: "power").font(.system(size: 14, weight: .semibold))
+                }
+                .buttonStyle(.borderless)
+                .help(tr("Sair"))
+                .accessibilityLabel(tr("Sair"))
                 }
             }
             if let version = panel.updateVersion, !exporting {
@@ -340,10 +351,9 @@ struct CareLinkPopover: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(tr(store.requiresLogin ? "Volta a entrar no CareLink" : "Liga a tua conta CareLink"))
                         .font(.title3.weight(.semibold))
-                    Text(tr("Entra na página oficial do CareLink. A sessão fica guardada no Porta-chaves deste Mac."))
+                    Text(tr("Vais entrar na página oficial do CareLink. A app apenas consulta os teus dados, nunca os altera, e guarda-os só neste Mac."))
                         .font(.subheadline).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                    RegionPicker(store: store)
                     if store.isSigningIn {
                         HStack {
                             ProgressView().controlSize(.small)
@@ -352,8 +362,12 @@ struct CareLinkPopover: View {
                             Button(tr("Cancelar")) { store.cancelLogin() }
                         }
                     } else {
-                        Button(tr("Entrar no CareLink")) { store.signIn() }
-                            .buttonStyle(.borderedProminent).tint(accent)
+                        HStack {
+                            Button(tr("Entrar no CareLink")) { store.signIn() }
+                                .buttonStyle(.borderedProminent).tint(accent)
+                            Spacer()
+                            RegionPicker(store: store)
+                        }
                     }
                 }
             }
@@ -563,15 +577,25 @@ struct PanelMaterial: NSViewRepresentable {
     func updateNSView(_ view: NSVisualEffectView, context: Context) {}
 }
 
-/// CareLink region for the next sign-in. Locked while signing in so the flow keeps one region.
+/// CareLink region for the next sign-in: a quiet menu beside the sign-in button, since most people
+/// never change it. Locked while signing in so the flow keeps one region.
 struct RegionPicker: View {
     @ObservedObject var store: CareLinkStore
     var body: some View {
-        Picker(tr("Região da conta"), selection: $store.region) {
-            ForEach(CareLinkRegion.allCases) { region in Text(region.label).tag(region) }
+        Menu {
+            ForEach(CareLinkRegion.allCases) { region in
+                Button { store.region = region } label: {
+                    if region == store.region { Label(region.label, systemImage: "checkmark") } else { Text(region.label) }
+                }
+            }
+        } label: {
+            Label(store.region.label, systemImage: "globe")
         }
-        .pickerStyle(.menu)
+        .menuStyle(.borderlessButton)
         .fixedSize()
+        .font(.callout)
+        .foregroundStyle(.secondary)
+        .accessibilityLabel(tr("Região da conta") + ": " + store.region.label)
         .disabled(store.isSigningIn)
         .help(tr("Escolhe Estados Unidos só para contas CareLink dos EUA. As restantes contas, incluindo fora da Europa, usam Europa e outros países."))
     }

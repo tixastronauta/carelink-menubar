@@ -108,3 +108,15 @@ Built in close iteration with daily use. Highlights:
 - **Smaller diagnostic logs:** besides the 7-day retention, the diagnostic log folder is now capped
   at 50 MB, with each day split into 10 MB files. Logs left in the folder used before 0.3.0
   ("CareLink Menu") are now deleted too.
+
+## 0.3.5: US accounts and a cleaner panel
+
+- **United States accounts:** the app now also works with US CareLink accounts. Choose the region
+  with the globe menu next to the sign-in button. "Europe and other countries" covers every
+  account outside the US (Canada, Australia, Latin America, much of Asia and more) and is what
+  existing users already have: your session carries over unchanged. US accounts have not been
+  tested with a real account yet; feedback is welcome.
+- **Clearer sign-in panel:** it now explains that you sign in on the official CareLink page, that
+  the app only reads your data and keeps it on this Mac.
+- **Tidier header:** buttons that cannot be used right now are hidden instead of greyed out, and a
+  new power button quits the app.
