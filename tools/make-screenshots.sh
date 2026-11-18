@@ -1,5 +1,5 @@
 #!/bin/sh
-# Regenerates assets/screenshots/*.png from synthetic data (see tools/make-screenshots.swift).
+# Regenerates assets/screenshots/*.png (English, and *-pt.png in Portuguese) from synthetic data (see tools/make-screenshots.swift).
 set -eu
 cd "$(dirname "$0")/.."
 scratch=$(mktemp -d)

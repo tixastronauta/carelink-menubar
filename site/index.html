@@ -149,7 +149,7 @@
         <a class="btn btn-secondary" href="#install" data-i18n="cta.howto">How to install</a>
       </div>
       <p class="fineprint" data-i18n="hero.fineprint">Free and open source · macOS 14 or later · Apple Silicon and Intel</p>
-      <div class="hero-shot"><img src="assets/screenshots/panel-dark.png" alt="The CareLink Menubar panel with glucose, time in range, consumables and a 24-hour chart" data-i18n-alt="hero.shotAlt"></div>
+      <div class="hero-shot"><img src="assets/screenshots/panel-dark.png" data-i18n-src="assets/screenshots/panel-dark-pt.png" alt="The CareLink Menubar panel with glucose, time in range, consumables and a 24-hour chart" data-i18n-alt="hero.shotAlt"></div>
       <div class="trust">
         <span class="pill" data-i18n="trust.readonly"><b>Read-only</b>: never controls your pump</span>
         <span class="pill" data-i18n="trust.private"><b>Private</b>: your data stays on your Mac</span>
@@ -185,10 +185,10 @@
       <p class="section-lead" data-i18n="widgets.lead">Pick the size that fits your workflow. Click any widget to open the full panel.</p>
       <div class="widgets">
         <div class="stack">
-          <img src="assets/screenshots/widget-small.png" width="200" alt="Small widget" data-i18n-alt="widgets.small">
-          <img src="assets/screenshots/widget-medium.png" width="392" alt="Medium widget" data-i18n-alt="widgets.medium">
+          <img src="assets/screenshots/widget-small.png" data-i18n-src="assets/screenshots/widget-small-pt.png" width="200" alt="Small widget" data-i18n-alt="widgets.small">
+          <img src="assets/screenshots/widget-medium.png" data-i18n-src="assets/screenshots/widget-medium-pt.png" width="392" alt="Medium widget" data-i18n-alt="widgets.medium">
         </div>
-        <img src="assets/screenshots/widget-large.png" width="392" alt="Large widget" data-i18n-alt="widgets.large">
+        <img src="assets/screenshots/widget-large.png" data-i18n-src="assets/screenshots/widget-large-pt.png" width="392" alt="Large widget" data-i18n-alt="widgets.large">
       </div>
     </div>
   </section>
@@ -346,11 +346,16 @@
       each('data-i18n', function (el) { en[el.getAttribute('data-i18n')] = el.innerHTML; });
       each('data-i18n-alt', function (el) { en[el.getAttribute('data-i18n-alt')] = el.alt; });
       each('data-i18n-content', function (el) { en[el.getAttribute('data-i18n-content')] = el.content; });
+      // Screenshots: data-i18n-src holds the Portuguese image; keep the English src to switch back.
+      each('data-i18n-src', function (el) { el.setAttribute('data-src-en', el.getAttribute('src')); });
       function apply(lang) {
         var dict = lang === 'pt' ? pt : en;
         each('data-i18n', function (el) { var v = dict[el.getAttribute('data-i18n')]; if (v != null) el.innerHTML = v; });
         each('data-i18n-alt', function (el) { var v = dict[el.getAttribute('data-i18n-alt')]; if (v != null) el.alt = v; });
         each('data-i18n-content', function (el) { var v = dict[el.getAttribute('data-i18n-content')]; if (v != null) el.content = v; });
+        each('data-i18n-src', function (el) {
+          el.setAttribute('src', lang === 'pt' ? el.getAttribute('data-i18n-src') : el.getAttribute('data-src-en'));
+        });
         document.documentElement.lang = lang === 'pt' ? 'pt-PT' : 'en';
         each('data-lang', function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-lang') === lang)); });
       }

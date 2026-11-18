@@ -31,7 +31,6 @@ func value(hoursAgo h: Double) -> Double {
         }
         let current = points.last!.1
         let prefs = Preferences(defaults: UserDefaults(suiteName: "screenshots.\(UUID().uuidString)")!)
-        prefs.language = .english
         let store = CareLinkStore(vault: CredentialVault(service: "screenshots.\(UUID().uuidString)"))
         var snapshot = Snapshot(glucose: current, unit: "mg/dL", timestamp: iso.string(from: points.last!.0), trend: "UP",
                                 activeInsulin: 1.35, history: points.map { Reading(timestamp: iso.string(from: $0.0), glucose: $0.1) },
@@ -47,16 +46,19 @@ func value(hoursAgo h: Double) -> Double {
         store.snapshot = snapshot; store.isSignedIn = true; store.now = now
         store.lastSuccess = now.addingTimeInterval(-60); store.nextRefresh = now.addingTimeInterval(540)
 
+        // English files keep their names (README); Portuguese ones get a "-pt" suffix (website).
+        for (language, code, suffix) in [(AppLanguage.english, "en", ""), (.portuguese, "pt", "-pt")] {
+        prefs.language = language
         for (scheme, name) in [(ColorScheme.dark, "panel-dark"), (.light, "panel-light")] {
             save(CareLinkPopover(store: store, prefs: prefs, exporting: true).content
                 .background(Color(nsColor: .windowBackgroundColor))
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .padding(20).environment(\.colorScheme, scheme), "\(out)/\(name).png")
+                .padding(20).environment(\.colorScheme, scheme), "\(out)/\(name)\(suffix).png")
         }
 
         let summary = WidgetSummary(glucoseText: String(format: "%.0f", current), unit: "mg/dL", trendSymbol: "↑",
                                     readingDate: points.last!.0, range: current > 180 ? "high" : "in", updated: now,
-                                    language: "en", points: points.suffix(36).map { WidgetPoint(date: $0.0, value: $0.1) },
+                                    language: code, points: points.suffix(36).map { WidgetPoint(date: $0.0, value: $0.1) },
                                     targetLow: 70, targetHigh: 180, timeInRange: 84, timeBelow: 2, timeAbove: 14,
                                     activeInsulin: 1.35, reservoirUnits: 142.6, pumpBatteryPercent: 76,
                                     infusionMinutesLeft: 2950, infusionChange: false, sensorHoursLeft: 88)
@@ -72,7 +74,8 @@ func value(hoursAgo h: Double) -> Double {
             }
             .frame(width: size.width, height: size.height)
             .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .padding(14).environment(\.colorScheme, .dark), "\(out)/\(name).png")
+            .padding(14).environment(\.colorScheme, .dark), "\(out)/\(name)\(suffix).png")
+        }
         }
         print("wrote screenshots to \(out)")
     }

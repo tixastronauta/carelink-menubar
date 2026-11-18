@@ -339,7 +339,7 @@ python3 tools/build-menubar.py --release
 xcrun swiftc -swift-version 5 -module-cache-path build/module-cache \
   macos/Localization.swift macos/Model.swift macos/ModelChecks.swift -o build/model-checks && ./build/model-checks
 
-# Translation coverage, README screenshots, app icon
+# Translation coverage, screenshots (English for the README, plus *-pt.png for the website), app icon
 python3 tools/check-translations.py
 ./tools/make-screenshots.sh
 xcrun swiftc tools/make-icon.swift -o build/make-icon && build/make-icon assets
@@ -471,7 +471,8 @@ from `?lang=pt|en`, then the visitor's PT/EN choice in the navigation bar (saved
 then the browser's preferred languages; anything else falls back to English. Clicking PT or EN
 also writes `?lang=` into the address (keeping any `#section`), so the URL in the address bar can be
 shared and opens in that language. New text needs a
-`data-i18n` key and a `pt` entry. `.github/workflows/pages.yml` publishes it to `https://tixastronauta.github.io/carelink-menubar/` whenever `site/` or
+`data-i18n` key and a `pt` entry. Screenshots carry `data-i18n-src` with their Portuguese version
+(`*-pt.png`). `.github/workflows/pages.yml` publishes it to `https://tixastronauta.github.io/carelink-menubar/` whenever `site/` or
 `assets/` change on `main`. The workflow copies the icon and screenshots from `assets/`.
 
 - **One-time setup:** repository Settings → Pages → Source: **GitHub Actions**.
