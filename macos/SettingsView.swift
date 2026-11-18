@@ -256,7 +256,7 @@ struct AccountSettings: View {
     private var subtitle: String {
         switch state {
         case .signingIn: return tr("Conclui o início de sessão na página oficial.")
-        case .connected: return store.accountName ?? tr("Conta CareLink")
+        case .connected: return (store.accountName ?? tr("Conta CareLink")) + " · " + store.region.label
         case .expired: return tr("Entra novamente para continuar a ver os dados.")
         case .signedOut: return tr("Entra na página oficial do CareLink para ver os teus dados.")
         }
@@ -293,6 +293,9 @@ struct AccountSettings: View {
                     }
                 }
                 .padding(.vertical, 6)
+                if state == .signedOut || state == .expired {
+                    RegionPicker(store: store)
+                }
                 HStack {
                     switch state {
                     case .signingIn:

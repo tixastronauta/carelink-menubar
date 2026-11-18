@@ -107,7 +107,12 @@ enum L10n {
 
         // Errors and status messages
         "A sessão expirou ou não foi aceite. Volta a entrar no CareLink.": "The session expired or was not accepted. Sign in to CareLink again.",
-        "A configuração europeia do CareLink mudou ou a conta pertence a outra região.": "CareLink's European configuration changed, or the account belongs to another region.",
+        "A configuração do CareLink mudou ou a conta pertence a outra região. Confirma a região escolhida ao entrar.": "CareLink's configuration changed, or the account belongs to another region. Check the region chosen when signing in.",
+        "Europa e outros países": "Europe and other countries",
+        "Estados Unidos": "United States",
+        "Região da conta": "Account region",
+        "Escolhe Estados Unidos só para contas CareLink dos EUA. As restantes contas, incluindo fora da Europa, usam Europa e outros países.":
+            "Choose United States only for US CareLink accounts. All other accounts, including those outside Europe, use Europe and other countries.",
         "O CareLink devolveu um formato de dados não reconhecido.": "CareLink returned an unrecognised data format.",
         "Não foi possível contactar o CareLink. Verifica a ligação e tenta novamente.": "Could not reach CareLink. Check the connection and try again.",
         "Esta versão precisa de uma conta com exatamente um paciente associado.": "This version needs an account with exactly one linked patient.",
@@ -138,8 +143,8 @@ enum L10n {
         "Definições": "Settings",
         "Volta a entrar no CareLink": "Sign in to CareLink again",
         "Liga a tua conta CareLink": "Connect your CareLink account",
-        "Entra na página oficial do CareLink europeu. A sessão fica guardada no Porta-chaves deste Mac.":
-            "Sign in on the official European CareLink page. The session is stored in this Mac's Keychain.",
+        "Entra na página oficial do CareLink. A sessão fica guardada no Porta-chaves deste Mac.":
+            "Sign in on the official CareLink page. The session is stored in this Mac's Keychain.",
         "A aguardar autenticação…": "Waiting for authentication…",
         "Entrar no CareLink": "Sign In to CareLink",
         "Tendência indisponível": "Trend unavailable",

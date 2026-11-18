@@ -65,8 +65,10 @@
 ## Requirements
 
 - macOS 14 Sonoma or later (universal binary: Apple Silicon and Intel).
-- A European CareLink account (patient, or care partner with exactly one linked patient).
-- Developed and validated with a MiniMed Flex on a European account. Other pumps, regions,
+- A CareLink account (patient, or care partner with exactly one linked patient) in either region:
+  **Europe and other countries** (CareLink's "EU" region, which also covers Canada, Australia,
+  Latin America and much of Asia) or **United States**.
+- Developed and validated with a MiniMed Flex on a European account. US accounts, other pumps,
   mmol/L accounts and MFA have not been verified.
 
 ## Install
@@ -116,7 +118,7 @@ Python is only used by the build script; the app itself has no runtime dependenc
 
   Withdrawing consent deletes these files, signs out and quits.
 - **No telemetry:** no analytics and no third-party servers. The app talks only to MiniMed's
-  European CareLink endpoints.
+  CareLink endpoints for your account's region.
 
 See [docs/GUIDE.md](docs/GUIDE.md) for the full user and developer guide, including which
 CareLink fields are used and how each was validated.

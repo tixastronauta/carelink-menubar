@@ -149,17 +149,51 @@ import Foundation
             do { _ = try OAuthFlow.code(from: URL(string:url)!, redirect: redirect, state:"ok"); preconditionFailure() } catch {}
         }
         precondition(OAuthFlow.challenge("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk") == "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM")
-        precondition(NetworkPolicy.allows(method:"GET", url:Endpoints.user, body:nil))
-        precondition(NetworkPolicy.allows(method:"POST", url:Endpoints.display, body:["username":"synthetic", "role":"patient"]))
-        precondition(!NetworkPolicy.allows(method:"POST", url:Endpoints.display, body:["username":"synthetic", "role":"patient", "bolus":1]))
-        precondition(NetworkPolicy.allows(method:"POST", url:Endpoints.display, body:["username":"synthetic", "role":"carepartner",
+        precondition(NetworkPolicy.allows(method:"GET", url:Endpoints.eu.user, body:nil))
+        precondition(NetworkPolicy.allows(method:"POST", url:Endpoints.eu.display, body:["username":"synthetic", "role":"patient"]))
+        precondition(!NetworkPolicy.allows(method:"POST", url:Endpoints.eu.display, body:["username":"synthetic", "role":"patient", "bolus":1]))
+        precondition(NetworkPolicy.allows(method:"POST", url:Endpoints.eu.display, body:["username":"synthetic", "role":"carepartner",
             "patientId":"synthetic-patient", "appVersion":ClientIdentity.appVersion, "os":ClientIdentity.os]))
-        precondition(!NetworkPolicy.allows(method:"POST", url:Endpoints.display, body:["username":"synthetic", "role":"carepartner",
+        precondition(!NetworkPolicy.allows(method:"POST", url:Endpoints.eu.display, body:["username":"synthetic", "role":"carepartner",
             "appVersion":"9.9", "os":ClientIdentity.os]), "Only the fixed client version may be declared")
-        precondition(!NetworkPolicy.allows(method:"POST", url:Endpoints.display, body:["username":"synthetic", "role":"carepartner",
+        precondition(!NetworkPolicy.allows(method:"POST", url:Endpoints.eu.display, body:["username":"synthetic", "role":"carepartner",
             "appVersion":ClientIdentity.appVersion, "os":"ios"]), "Only the fixed client OS may be declared")
-        precondition(!NetworkPolicy.allows(method:"DELETE", url:Endpoints.user, body:nil))
+        precondition(!NetworkPolicy.allows(method:"DELETE", url:Endpoints.eu.user, body:nil))
         precondition(!NetworkPolicy.allows(method:"GET", url:URL(string:"https://example.com")!, body:nil))
+        for endpoints in Endpoints.all {
+            precondition(NetworkPolicy.allows(method:"GET", url:endpoints.sso, body:nil)
+                && NetworkPolicy.allows(method:"GET", url:endpoints.patients, body:nil)
+                && NetworkPolicy.allows(method:"POST", url:endpoints.display, body:["username":"synthetic", "role":"patient"])
+                && NetworkPolicy.allows(method:"POST", url:endpoints.token, body:["grant_type":"refresh_token", "client_id":"c", "refresh_token":"r"]))
+            precondition(!NetworkPolicy.allows(method:"POST", url:endpoints.user, body:["username":"synthetic"]))
+        }
+        precondition(Endpoints.us.display.absoluteString == "https://clcloud.minimed.com/connect/carepartner/v13/display/message"
+            && Endpoints.us.user.absoluteString == "https://carelink.minimed.com/api/carepartner/v2/users/me"
+            && Endpoints.us.token.absoluteString == "https://carelink-login.minimed.com/oauth/token"
+            && Endpoints.eu.display.absoluteString == "https://clcloud.minimed.eu/connect/carepartner/v13/display/message"
+            && Endpoints.eu.patients.absoluteString == "https://carelink.minimed.eu/api/carepartner/v2/links/patients"
+            && Endpoints.eu.authorize.absoluteString == "https://carelink-login.minimed.eu/authorize", "Fixed regional URLs")
+        precondition(!NetworkPolicy.allows(method:"GET", url:URL(string:"https://carelink-trials.minimed.com/api/carepartner/v2/users/me")!, body:nil),
+                     "Clinical-trials region stays blocked")
+        // SSO metadata must name the login host of the region it was requested for.
+        func sso(_ host: String) -> [String:Any] {
+            ["server":["hostname":host, "port":443, "prefix":""],
+             "system_endpoints":["authorization_endpoint_path":"/authorize", "token_endpoint_path":"/oauth/token"],
+             "client":["client_id":"synthetic", "scope":"openid", "audience":"synthetic", "redirect_uri":"com.medtronic.carepartner:/sso"]]
+        }
+        let usMetadata = try OAuthMetadata(sso("carelink-login.minimed.com"), region:.us)
+        precondition(OAuthFlow.authorizationURL(metadata:usMetadata, state:"s", verifier:"v").host == "carelink-login.minimed.com")
+        for (host, region) in [("carelink-login.minimed.eu", CareLinkRegion.us), ("carelink-login.minimed.com", .eu)] {
+            do { _ = try OAuthMetadata(sso(host), region:region); preconditionFailure("Cross-region SSO host accepted") } catch {}
+        }
+        // Sessions saved before region support decode as EU; new ones keep their region through rotation.
+        let preRegion = try JSONDecoder().decode(Tokens.self, from:Data(#"{"accessToken":"a","refreshToken":"r","clientID":"c"}"#.utf8))
+        precondition(preRegion.region == .eu)
+        let usTokens = try JSONDecoder().decode(Tokens.self, from:JSONEncoder().encode(Tokens(accessToken:"a", refreshToken:"r", clientID:"c", region:.us)))
+        precondition(usTokens.region == .us)
+        let usRotated = try Tokens.response(["access_token":"n"], clientID:"c", previous:usTokens)
+        let usFresh = try Tokens.response(["access_token":"n", "refresh_token":"r"], clientID:"c", region:.us)
+        precondition(usRotated.region == .us && usFresh.region == .us)
         let stored = Tokens(accessToken:"synthetic", refreshToken:"old", clientID:"client")
         let rotated = try Tokens.response(["access_token":"new", "refresh_token":"rotated"], clientID:stored.clientID, previous:stored)
         precondition(rotated.refreshToken == "rotated")
@@ -169,6 +203,6 @@ import Foundation
         precondition(stored.accountName == nil)
         let retained = try Tokens.response(["access_token":"new"], clientID:stored.clientID, previous:stored)
         precondition(retained.refreshToken == "old")
-        print("PASS: native normalization, optional device status, time in range, SmartGuard, connection, sensor/infusion status and time left, bolus and meal markers, pump limits, mmol plausibility, diagnostics redaction, shape, rotation, size cap and legacy clean-up, DST, schema rejection, OAuth state/callback/PKCE, read-only network policy and token rotation")
+        print("PASS: native normalization, optional device status, time in range, SmartGuard, connection, sensor/infusion status and time left, bolus and meal markers, pump limits, mmol plausibility, diagnostics redaction, shape, rotation, size cap and legacy clean-up, DST, schema rejection, OAuth state/callback/PKCE, read-only network policy for EU and US, regional SSO hosts, region persistence and token rotation")
     }
 }

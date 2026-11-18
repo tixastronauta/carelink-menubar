@@ -14,6 +14,14 @@ final class CareLinkStore: ObservableObject {
     @Published var now = Date()
     @Published var nextRefresh: Date?
     @Published var accountName: String?
+    /// Region used for the next sign-in; follows the saved session once signed in. Not health data.
+    @Published var region: CareLinkRegion = CareLinkStore.storedRegion {
+        didSet { UserDefaults.standard.set(region.rawValue, forKey:Self.regionKey) }
+    }
+    private static let regionKey = "carelinkRegion"
+    private static var storedRegion: CareLinkRegion {
+        CareLinkRegion(rawValue:UserDefaults.standard.string(forKey:regionKey) ?? "") ?? .suggested
+    }
     var onChange: (() -> Void)?
     var loginAnchor: (() -> NSWindow)?
     private var gate = RefreshGate()
@@ -60,6 +68,7 @@ final class CareLinkStore: ObservableObject {
             let tokens = try vault.load()
             isSignedIn = tokens != nil
             accountName = tokens?.accountName
+            if let tokens, region != tokens.region { region = tokens.region }
         }
         catch { errorMessage = CareLinkError.keychain.message }
         if isSignedIn { refresh() }
@@ -122,9 +131,10 @@ final class CareLinkStore: ObservableObject {
         isSigningIn = true; errorMessage = nil
         let epoch = generation
         let anchor = loginAnchor?() ?? NSWindow()
+        let region = region
         work = Task {
             do {
-                let metadata = try await api.metadata()
+                let metadata = try await api.metadata(region:region)
                 let state = try OAuthFlow.random(), verifier = try OAuthFlow.random()
                 let callback = try await browser.authenticate(
                     url:OAuthFlow.authorizationURL(metadata:metadata,state:state,verifier:verifier),

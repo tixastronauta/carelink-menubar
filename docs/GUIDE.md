@@ -11,6 +11,7 @@ User and developer reference for CareLink Menubar 0.3. For a quick overview see 
 - [Desktop widget](#desktop-widget)
 - [Notifications](#notifications)
 - [In-app updates](#in-app-updates)
+- [Regions](#regions)
 - [Data, privacy and consent](#data-privacy-and-consent)
 - [CareLink fields used](#carelink-fields-used)
 - [Validation status and known limitations](#validation-status-and-known-limitations)
@@ -24,9 +25,9 @@ User and developer reference for CareLink Menubar 0.3. For a quick overview see 
    variant `build/CareLink Menubar Dev.app` (see [Development](#development)).
 2. Read and accept the consent window. Nothing is read from CareLink before you accept; **Quit**
    closes the app. The text can be read in Portuguese or English.
-3. Click **Sign in to CareLink** and authenticate on the official European CareLink page, shown in
-   a system web sheet (`ASWebAuthenticationSession`, ephemeral session, PKCE). Never enter your
-   credentials anywhere else.
+3. Choose the **account region** (see [Regions](#regions)), click **Sign in to CareLink** and
+   authenticate on the official CareLink page for that region, shown in a system web sheet
+   (`ASWebAuthenticationSession`, ephemeral session, PKCE). Never enter your credentials anywhere else.
 4. The app stores the OAuth tokens in your login Keychain and starts reading data.
 
 ## Using the app
@@ -96,7 +97,7 @@ Less obvious options have an ⓘ button: hover for a tooltip, click for the full
 | **General** | Language: Automatic (macOS), Português or English, applied immediately. Open at Mac login (`SMAppService`; the panel stays closed on login launches). Refresh every 5 or 10 min. Widget: show data in the desktop widget. Notifications: technical problems and new versions. |
 | **Display** | Colour outside the target range, trend arrow and sparkline in the menu bar. Panel elements: time in range, average/CV/GMI, SmartGuard, consumables, sensor messages, connection messages. Old-reading and CareLink errors are always shown. |
 | **Chart** | Target range: manual limits (50–120 and 120–300 mg/dL, default 70–180), or the pump's alert limits (`limits[0]`). Band, out-of-range dots, boluses and meals, SmartGuard auto corrections. |
-| **Account** | Status card (connected with the account e-mail or user name, expired, signed out, signing in), last update, Sign In / Sign Out (with confirmation). |
+| **Account** | Status card (connected with the account e-mail or user name and region, expired, signed out, signing in), last update, account region menu while signed out or expired, Sign In / Sign Out (with confirmation). |
 | **Advanced** | Diagnostic mode, Open Logs Folder, Delete Logs, Copy Payload Structure. |
 | **About** | Version, updates (check automatically, on by default; last check; **Check Now**), license, source code on GitHub, original project, consent date and **Withdraw Consent…**. |
 
@@ -174,9 +175,41 @@ earlier versions have to install 0.3.3 from the DMG once.
   from the next launch.
 - **Development builds** never check for or install updates (see [Development](#development)).
 
+## Regions
+
+CareLink runs two public regions, and the app supports both:
+
+| Region in the app | CareLink region | Countries | Hosts |
+| --- | --- | --- | --- |
+| Europe and other countries | `EU` | 107 countries: Europe plus Canada, Australia, New Zealand, Latin America, the Middle East, much of Asia and Africa | `carelink.minimed.eu`, `clcloud.minimed.eu`, `carelink-login.minimed.eu` |
+| United States | `US` | United States only | `carelink.minimed.com`, `clcloud.minimed.com`, `carelink-login.minimed.com` |
+
+The country list comes from CareLink's public discovery document (`supportedCountries`), checked
+in November 2026. The third region in that document, `CLINICAL` (clinical trials), is not supported
+and stays blocked by `NetworkPolicy`.
+
+- **Choosing:** the sign-in panel and Settings → Account (while signed out or expired) have an
+  **Account region** menu. It defaults to United States when the Mac's region is the US, and to
+  Europe and other countries otherwise. The choice is a UserDefaults preference, not health data.
+- **Session:** the region is saved with the tokens in the Keychain (`Tokens.region`); refresh and
+  reads always use the saved session's region. Sessions saved before region support have no region field and
+  are read as EU, so existing users stay signed in. Settings → Account shows the region next to the
+  account.
+- **Same protocol:** both regions use the same Auth0 sign-in (PKCE, redirect
+  `com.medtronic.carepartner:/sso`), care partner API v2 and `display/message` v13. They differ in
+  hosts, OAuth client ID and audience (`carepartner.patient.ous` vs `carepartner.patient.us`), which
+  come from each region's public SSO configuration.
+- **Checks on every read:** the shared discovery document must list the account's country
+  (`token_details.country`) under the session's region, and its base URLs must equal the fixed ones
+  in `Endpoints`. Otherwise the read stops with "the account belongs to another region".
+- **Validation:** US support passes the synthetic checks, and the real public US SSO configuration
+  and discovery entry match the fixed endpoints. No US account has signed in yet: sign-in, reads and
+  payload fields on US accounts are not verified (see [Validation status](#validation-status-and-known-limitations)).
+
 ## Data, privacy and consent
 
-- **Network:** only MiniMed's European CareLink endpoints are used. `NetworkPolicy` allows a few
+- **Network:** only MiniMed's CareLink endpoints for the session's region (see [Regions](#regions))
+  are used; the discovery document is always read from the EU host, which lists both regions. `NetworkPolicy` allows a few
   GET endpoints and exactly two POST bodies: `display/message` (reads data) and the OAuth token
   request (sign-in and refresh). The `display/message` body may hold only `username`, `role`,
   `patientId` and, for care-partner reads, the fixed client declaration `appVersion` "3.8" and
@@ -264,7 +297,9 @@ diagnostic logs.
 
 **Not verified:**
 
-- other pumps and regions;
+- US accounts: sign-in, reads and payload fields (only synthetic checks and the public US
+  configuration were checked);
+- other pumps;
 - mmol/L accounts;
 - MFA;
 - running on an Intel Mac (the universal build compiles).
@@ -273,7 +308,8 @@ diagnostic logs.
 
 - parsing, DST and units;
 - PKCE and OAuth callback validation;
-- the network allowlist and token rotation;
+- the network allowlist for both regions, regional SSO hosts, region persistence and token rotation;
+- EU and US reads against mocked servers, and region mismatches;
 - the care-partner request body and the 206 "Upgrade application" error;
 - cancellation and logout races;
 - refresh scheduling and alert transitions;
@@ -320,6 +356,9 @@ The installed release and a development build run side by side. The build script
 | Icon and marks | standard | orange icon with a "DEV" band, "DEV" in the menu bar and panel |
 | Preferences, consent | own UserDefaults domain | own UserDefaults domain |
 | Keychain session | `local.tcx.carelink.menu.oauth.eu` | `local.tcx.carelink.menu.dev.oauth.eu` |
+
+The `.oauth.eu` suffix predates US support and is kept so existing sessions survive; the session
+itself records its region.
 | App Group, widget | `<Team>.local.tcx.carelink.menu`, "CareLink" | `<Team>.local.tcx.carelink.menu.dev`, "CareLink Dev" |
 | Widget URL, logs | `carelinkmenu://`, `~/Library/Logs/CareLink Menubar` | `carelinkmenu-dev://`, `~/Library/Logs/CareLink Menubar Dev` |
 | Updates | Sparkle, daily | none |

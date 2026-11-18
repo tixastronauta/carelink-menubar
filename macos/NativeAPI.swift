@@ -54,27 +54,27 @@ final class NativeAPI {
             Diagnostics.record(method:method, url:url, status:response.statusCode, request:body,
                                response:try? JSONSerialization.jsonObject(with:data))
         }
-        if url == Endpoints.display, response.statusCode == 206,
+        if Endpoints.isDisplay(url), response.statusCode == 206,
            ((try? JSONSerialization.jsonObject(with:data)) as? [String:Any])?["message"] as? String == "Upgrade application" {
             throw CareLinkError.outdatedClient
         }
-        if (url == Endpoints.token && response.statusCode == 400) || response.statusCode == 401 || response.statusCode == 403 { throw CareLinkError.authentication }
+        if (Endpoints.isToken(url) && response.statusCode == 400) || response.statusCode == 401 || response.statusCode == 403 { throw CareLinkError.authentication }
         guard response.statusCode == 200, data.count < 10_000_000 else { throw CareLinkError.network }
         do { return try JSONSerialization.jsonObject(with:data) }
         catch { throw CareLinkError.schema }
     }
-    func metadata() async throws -> OAuthMetadata {
-        guard let object = try await request(Endpoints.sso) as? [String:Any] else { throw CareLinkError.configuration }
-        return try OAuthMetadata(object)
+    func metadata(region: CareLinkRegion) async throws -> OAuthMetadata {
+        guard let object = try await request(region.endpoints.sso) as? [String:Any] else { throw CareLinkError.configuration }
+        return try OAuthMetadata(object, region:region)
     }
     func exchange(code: String, verifier: String, metadata: OAuthMetadata) async throws -> Tokens {
         let body = ["grant_type":"authorization_code","client_id":metadata.clientID,"code":code,
                     "redirect_uri":metadata.redirect.absoluteString,"code_verifier":verifier]
-        guard let object = try await request(Endpoints.token,method:"POST",body:body,form:true) as? [String:Any] else { throw CareLinkError.authentication }
-        return try Tokens.response(object,clientID:metadata.clientID)
+        guard let object = try await request(metadata.region.endpoints.token,method:"POST",body:body,form:true) as? [String:Any] else { throw CareLinkError.authentication }
+        return try Tokens.response(object,clientID:metadata.clientID,region:metadata.region)
     }
     private func renew(_ tokens: Tokens) async throws -> Tokens {
-        guard let object = try await request(Endpoints.token,method:"POST",body:["grant_type":"refresh_token",
+        guard let object = try await request(tokens.region.endpoints.token,method:"POST",body:["grant_type":"refresh_token",
             "client_id":tokens.clientID,"refresh_token":tokens.refreshToken],form:true) as? [String:Any] else { throw CareLinkError.authentication }
         let fresh = try Tokens.response(object,clientID:tokens.clientID,previous:tokens)
         try Task.checkCancellation()
@@ -98,23 +98,24 @@ final class NativeAPI {
         guard let details = tokens.claims?["token_details"] as? [String:Any],
               let country = details["country"] as? String,
               let username = details["preferred_username"] as? String else { throw CareLinkError.authentication }
+        let endpoints = tokens.region.endpoints, name = tokens.region.discoveryName
         guard let discovery = try await request(Endpoints.discovery) as? [String:Any],
               let countries = discovery["supportedCountries"] as? [[String:Any]],
-              countries.contains(where: { ($0[country.uppercased()] as? [String:Any])?["region"] as? String == "EU" }),
+              countries.contains(where: { ($0[country.uppercased()] as? [String:Any])?["region"] as? String == name }),
               let regions = discovery["CP"] as? [[String:Any]],
-              let region = regions.first(where: { $0["region"] as? String == "EU" }),
-              region["baseUrlCareLink"] as? String == "https://carelink.minimed.eu/api/carepartner/v2",
-              region["baseUrlCumulus"] as? String == "https://clcloud.minimed.eu/connect/carepartner/v13" else { throw CareLinkError.configuration }
-        guard let user = try await request(Endpoints.user,token:tokens.accessToken) as? [String:Any],
+              let region = regions.first(where: { $0["region"] as? String == name }),
+              region["baseUrlCareLink"] as? String == endpoints.baseCareLink,
+              region["baseUrlCumulus"] as? String == endpoints.baseCumulus else { throw CareLinkError.configuration }
+        guard let user = try await request(endpoints.user,token:tokens.accessToken) as? [String:Any],
               let role = user["role"] as? String else { throw CareLinkError.schema }
         var body: [String:Any] = ["username":username,"role":"patient"]
         if ["CARE_PARTNER","CARE_PARTNER_OUS"].contains(role) {
-            guard let patients = try await request(Endpoints.patients,token:tokens.accessToken) as? [[String:Any]],
+            guard let patients = try await request(endpoints.patients,token:tokens.accessToken) as? [[String:Any]],
                   patients.count == 1, let patient = patients.first?["username"] as? String else { throw CareLinkError.multiplePatients }
             body["role"] = "carepartner"; body["patientId"] = patient
             body["appVersion"] = ClientIdentity.appVersion; body["os"] = ClientIdentity.os
         } else if !["PATIENT","PATIENT_OUS"].contains(role) { throw CareLinkError.configuration }
-        guard let raw = try await request(Endpoints.display,method:"POST",body:body,token:tokens.accessToken) as? [String:Any] else { throw CareLinkError.schema }
+        guard let raw = try await request(endpoints.display,method:"POST",body:body,token:tokens.accessToken) as? [String:Any] else { throw CareLinkError.schema }
         lastShape = Diagnostics.shape(raw)
         return try NativeParser.snapshot(raw)
     }

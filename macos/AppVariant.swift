@@ -15,6 +15,8 @@ enum AppVariant: String {
     var isDev: Bool { self == .dev }
     var displayName: String { isDev ? "CareLink Menubar Dev" : "CareLink Menubar" }
     /// Keychain service holding the OAuth tokens. The release value is unchanged since 0.2.
+    // The ".eu" suffix predates US support; it is kept so existing sessions survive. The saved
+    // session records its own region (`Tokens.region`).
     var keychainService: String { isDev ? "local.tcx.carelink.menu.dev.oauth.eu" : "local.tcx.carelink.menu.oauth.eu" }
     /// URL scheme the widget opens to show the panel.
     var urlScheme: String { isDev ? "carelinkmenu-dev" : "carelinkmenu" }

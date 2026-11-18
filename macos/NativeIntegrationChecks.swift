@@ -26,8 +26,8 @@ final class MockCareLink: URLProtocol {
 }
 
 @main struct NativeIntegrationChecks {
-    static func jwt(expiry: Double) -> String {
-        let claims: [String:Any] = ["exp":expiry,"token_details":["country":"PT","preferred_username":"synthetic"]]
+    static func jwt(expiry: Double, country: String = "PT") -> String {
+        let claims: [String:Any] = ["exp":expiry,"token_details":["country":country,"preferred_username":"synthetic"]]
         return "synthetic." + OAuthFlow.base64URL(try! JSONSerialization.data(withJSONObject:claims)) + ".synthetic"
     }
     @MainActor static func main() async throws {
@@ -42,14 +42,20 @@ final class MockCareLink: URLProtocol {
         var role = "PATIENT"
         var displayBodies: [[String:Any]] = []
         var outdated = false
+        var country = "PT"
+        var hosts: [String] = []
         MockCareLink.handler = { request in
-            requests.append(request.url!.path)
-            switch request.url! {
-            case Endpoints.token: return (200,["access_token":jwt(expiry:Date().timeIntervalSince1970+7200),"refresh_token":"rotated"])
-            case Endpoints.discovery: return (200,["supportedCountries":[["PT":["region":"EU"]]], "CP":[["region":"EU","baseUrlCareLink":"https://carelink.minimed.eu/api/carepartner/v2","baseUrlCumulus":"https://clcloud.minimed.eu/connect/carepartner/v13"]]])
-            case Endpoints.user: return failUser ? (500,[:]) : (200,["role":role])
-            case Endpoints.patients: return (200,[["username":"synthetic-patient"]])
-            case Endpoints.display:
+            let url = request.url!
+            requests.append(url.path); hosts.append(url.host ?? "")
+            let endpoints = Endpoints.all.first { [$0.token,$0.user,$0.patients,$0.display].contains(url) }
+            switch url as URL? {
+            case endpoints?.token: return (200,["access_token":jwt(expiry:Date().timeIntervalSince1970+7200,country:country),"refresh_token":"rotated"])
+            case Endpoints.discovery: return (200,["supportedCountries":[["PT":["region":"EU"]],["US":["region":"US"]]], "CP":[
+                ["region":"US","baseUrlCareLink":"https://carelink.minimed.com/api/carepartner/v2","baseUrlCumulus":"https://clcloud.minimed.com/connect/carepartner/v13"],
+                ["region":"EU","baseUrlCareLink":"https://carelink.minimed.eu/api/carepartner/v2","baseUrlCumulus":"https://clcloud.minimed.eu/connect/carepartner/v13"]]])
+            case endpoints?.user: return failUser ? (500,[:]) : (200,["role":role])
+            case endpoints?.patients: return (200,[["username":"synthetic-patient"]])
+            case endpoints?.display:
                 let body = request.httpBodyStream.map { stream -> [String:Any] in
                     stream.open(); defer { stream.close() }
                     var data = Data(); var buffer = [UInt8](repeating:0,count:4096)
@@ -84,6 +90,22 @@ final class MockCareLink: URLProtocol {
         do { _ = try await api.fetch(); preconditionFailure() }
         catch CareLinkError.outdatedClient {} catch { preconditionFailure("206 Upgrade application must map to outdatedClient") }
         outdated = false; role = "PATIENT"
+        // US session: every authenticated request stays on the US hosts.
+        country = "US"; hosts = []
+        vault.tokens = Tokens(accessToken:jwt(expiry:0,country:"US"),refreshToken:"old",clientID:"synthetic",region:.us)
+        let usRead = try await api.fetch(); precondition(usRead.glucose == 123)
+        precondition(vault.tokens?.region == .us, "Renewal must keep the US region")
+        precondition(hosts == ["carelink-login.minimed.com","clcloud.minimed.eu","carelink.minimed.com","clcloud.minimed.com"],
+                     "US reads use US hosts (discovery is shared)")
+        role = "CARE_PARTNER"
+        let usPartner = try await api.fetch(); precondition(usPartner.glucose == 123 && displayBodies.last?["role"] as? String == "carepartner")
+        role = "PATIENT"
+        // An EU session whose account country belongs to the US region is rejected, and vice versa.
+        vault.tokens = Tokens(accessToken:jwt(expiry:Date().timeIntervalSince1970+7200,country:"US"),refreshToken:"r",clientID:"synthetic")
+        do { _ = try await api.fetch(); preconditionFailure() } catch CareLinkError.configuration {} catch { preconditionFailure("Region mismatch must be a configuration error") }
+        vault.tokens = Tokens(accessToken:jwt(expiry:Date().timeIntervalSince1970+7200,country:"PT"),refreshToken:"r",clientID:"synthetic",region:.us)
+        do { _ = try await api.fetch(); preconditionFailure() } catch CareLinkError.configuration {} catch { preconditionFailure("Region mismatch must be a configuration error") }
+        country = "PT"
         failUser = false; vault.tokens = initial; MockCareLink.delay = 0.2
         let store = CareLinkStore(vault:vault,session:session)
         store.start()
@@ -94,6 +116,6 @@ final class MockCareLink: URLProtocol {
         store.tick()
         precondition(!store.isRefreshing, "Logged-out timer must not fetch")
         store.stop(); session.invalidateAndCancel()
-        print("PASS: native API read, care partner read with client version, outdated-client error, refresh rotation, persistence after API failure, cancellation/logout race and logged-out timer")
+        print("PASS: native API read (EU and US), region mismatch, care partner read with client version, outdated-client error, refresh rotation, persistence after API failure, cancellation/logout race and logged-out timer")
     }
 }

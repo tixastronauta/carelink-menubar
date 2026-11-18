@@ -340,9 +340,10 @@ struct CareLinkPopover: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(tr(store.requiresLogin ? "Volta a entrar no CareLink" : "Liga a tua conta CareLink"))
                         .font(.title3.weight(.semibold))
-                    Text(tr("Entra na página oficial do CareLink europeu. A sessão fica guardada no Porta-chaves deste Mac."))
+                    Text(tr("Entra na página oficial do CareLink. A sessão fica guardada no Porta-chaves deste Mac."))
                         .font(.subheadline).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
+                    RegionPicker(store: store)
                     if store.isSigningIn {
                         HStack {
                             ProgressView().controlSize(.small)
@@ -560,4 +561,18 @@ struct PanelMaterial: NSViewRepresentable {
         return view
     }
     func updateNSView(_ view: NSVisualEffectView, context: Context) {}
+}
+
+/// CareLink region for the next sign-in. Locked while signing in so the flow keeps one region.
+struct RegionPicker: View {
+    @ObservedObject var store: CareLinkStore
+    var body: some View {
+        Picker(tr("Região da conta"), selection: $store.region) {
+            ForEach(CareLinkRegion.allCases) { region in Text(region.label).tag(region) }
+        }
+        .pickerStyle(.menu)
+        .fixedSize()
+        .disabled(store.isSigningIn)
+        .help(tr("Escolhe Estados Unidos só para contas CareLink dos EUA. As restantes contas, incluindo fora da Europa, usam Europa e outros países."))
+    }
 }

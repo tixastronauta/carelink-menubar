@@ -10,8 +10,8 @@ communication, required test runs) are mandatory. Keep both files consistent.
 ## What this is
 
 CareLink Menubar: a native macOS 14+ menu bar app (Swift/SwiftUI, no Xcode project) showing
-glucose, trend, active insulin and a history chart from the European MiniMed CareLink
-cloud. Standalone since 0.2; current version 0.3.4 (`VERSION` in `tools/build-menubar.py`). The Python package `carelink_proto/` is the earlier
+glucose, trend, active insulin and a history chart from the MiniMed CareLink
+cloud (EU region, which covers most countries, and US region). Standalone since 0.2; current version 0.3.4 (`VERSION` in `tools/build-menubar.py`). The Python package `carelink_proto/` is the earlier
 prototype, preserved but no longer called by the app; `vendor/` (git-ignored) holds the
 upstream AGPL client it was derived from.
 
@@ -80,8 +80,8 @@ script (`*Checks.swift` and `NativeLiveCheck.swift` are excluded). Add new app f
   a binary framework downloaded and hash-checked by the build; `Updates.swift` is the only file
   that imports it, so checks and screenshots compile without it.
 
-- `NativeCore.swift`: pure logic shared by the app and the checks. `Endpoints` (fixed
-  EU URLs), `NetworkPolicy.allows` (allowlist of GET endpoints and the only two
+- `NativeCore.swift`: pure logic shared by the app and the checks. `CareLinkRegion` and `Endpoints`
+  (fixed URLs per region, `.eu` and `.us`; nothing taken from server responses), `NetworkPolicy.allows` (allowlist of GET endpoints and the only two
   permitted POST bodies: display/message and OAuth token), `Tokens`, OAuth/PKCE helpers
   (`OAuthFlow`), and `NativeParser`, which normalizes the raw `patientData` JSON into a
   `Snapshot`.

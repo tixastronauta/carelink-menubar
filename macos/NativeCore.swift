@@ -8,7 +8,7 @@ enum CareLinkError: Error {
     var message: String {
         switch self {
         case .authentication: return tr("A sessão expirou ou não foi aceite. Volta a entrar no CareLink.")
-        case .configuration: return tr("A configuração europeia do CareLink mudou ou a conta pertence a outra região.")
+        case .configuration: return tr("A configuração do CareLink mudou ou a conta pertence a outra região. Confirma a região escolhida ao entrar.")
         case .schema: return tr("O CareLink devolveu um formato de dados não reconhecido.")
         case .network: return tr("Não foi possível contactar o CareLink. Verifica a ligação e tenta novamente.")
         case .multiplePatients: return tr("Esta versão precisa de uma conta com exatamente um paciente associado.")
@@ -19,14 +19,45 @@ enum CareLinkError: Error {
     }
 }
 
-enum Endpoints {
+/// CareLink cloud region. `.eu` is CareLink's "EU" region, which also serves most countries outside
+/// Europe (Canada, Australia, Latin America, Asia...); `.us` serves only the United States.
+enum CareLinkRegion: String, Codable, CaseIterable, Identifiable {
+    case eu, us
+    var id: String { rawValue }
+    /// Region name used by the discovery document (`supportedCountries` and `CP`).
+    var discoveryName: String { self == .eu ? "EU" : "US" }
+    var endpoints: Endpoints { self == .eu ? .eu : .us }
+    var label: String { self == .eu ? tr("Europa e outros países") : tr("Estados Unidos") }
+    /// Region preselected before the first sign-in, from the Mac's region setting.
+    static var suggested: CareLinkRegion { Locale.current.region?.identifier == "US" ? .us : .eu }
+}
+
+/// Fixed CareLink URLs per region. Nothing here is taken from server responses: the discovery
+/// document is only checked against these values.
+struct Endpoints: Equatable {
+    /// Public discovery document; it lists every region and is the one the official app reads.
     static let discovery = URL(string:"https://clcloud.minimed.eu/connect/carepartner/v13/discover/android/3.6")!
-    static let sso = URL(string:"https://carelink.minimed.eu/configs/v1/carepartner_auth0_ous_sso_config_v1.json")!
-    static let user = URL(string:"https://carelink.minimed.eu/api/carepartner/v2/users/me")!
-    static let patients = URL(string:"https://carelink.minimed.eu/api/carepartner/v2/links/patients")!
-    static let display = URL(string:"https://clcloud.minimed.eu/connect/carepartner/v13/display/message")!
-    static let token = URL(string:"https://carelink-login.minimed.eu/oauth/token")!
-    static let authorize = URL(string:"https://carelink-login.minimed.eu/authorize")!
+    let loginHost: String
+    let sso: URL, user: URL, patients: URL, display: URL, token: URL, authorize: URL
+    let baseCareLink: String, baseCumulus: String
+    private init(web: String, cloud: String, login: String, sso: String) {
+        loginHost = login
+        baseCareLink = "https://\(web)/api/carepartner/v2"
+        baseCumulus = "https://\(cloud)/connect/carepartner/v13"
+        self.sso = URL(string:"https://\(web)/configs/v1/\(sso)")!
+        user = URL(string:baseCareLink + "/users/me")!
+        patients = URL(string:baseCareLink + "/links/patients")!
+        display = URL(string:baseCumulus + "/display/message")!
+        token = URL(string:"https://\(login)/oauth/token")!
+        authorize = URL(string:"https://\(login)/authorize")!
+    }
+    static let eu = Endpoints(web:"carelink.minimed.eu", cloud:"clcloud.minimed.eu", login:"carelink-login.minimed.eu",
+                              sso:"carepartner_auth0_ous_sso_config_v1.json")
+    static let us = Endpoints(web:"carelink.minimed.com", cloud:"clcloud.minimed.com", login:"carelink-login.minimed.com",
+                              sso:"carepartner_auth0_us_sso_config_v1.json")
+    static let all = [eu, us]
+    static func isDisplay(_ url: URL) -> Bool { all.contains { $0.display == url } }
+    static func isToken(_ url: URL) -> Bool { all.contains { $0.token == url } }
 }
 
 /// Client version declared in the care partner display/message body. Since October 2026 the server
@@ -39,15 +70,17 @@ enum ClientIdentity {
 
 enum NetworkPolicy {
     static func allows(method: String, url: URL, body: [String: Any]?) -> Bool {
-        if method == "GET" { return [Endpoints.discovery, Endpoints.sso, Endpoints.user, Endpoints.patients].contains(url) }
+        if method == "GET" {
+            return url == Endpoints.discovery || Endpoints.all.contains { [$0.sso, $0.user, $0.patients].contains(url) }
+        }
         guard method == "POST", let body else { return false }
-        if url == Endpoints.display {
+        if Endpoints.isDisplay(url) {
             return Set(body.keys).isSubset(of:["username","role","patientId","appVersion","os"])
                 && body["username"] is String && ["patient","carepartner"].contains(body["role"] as? String ?? "")
                 && (body["appVersion"] == nil || body["appVersion"] as? String == ClientIdentity.appVersion)
                 && (body["os"] == nil || body["os"] as? String == ClientIdentity.os)
         }
-        if url == Endpoints.token {
+        if Endpoints.isToken(url) {
             return Set(body.keys).isSubset(of:["grant_type","client_id","code","redirect_uri","code_verifier","refresh_token"])
                 && ["authorization_code","refresh_token"].contains(body["grant_type"] as? String ?? "")
         }
@@ -59,10 +92,23 @@ struct Tokens: Codable {
     var accessToken: String
     var refreshToken: String
     var clientID: String
-    static func response(_ object: [String: Any], clientID: String, previous: Tokens? = nil) throws -> Tokens {
+    /// Region the session belongs to; sessions saved before region support are EU.
+    var region: CareLinkRegion
+    init(accessToken: String, refreshToken: String, clientID: String, region: CareLinkRegion = .eu) {
+        self.accessToken = accessToken; self.refreshToken = refreshToken; self.clientID = clientID; self.region = region
+    }
+    private enum CodingKeys: String, CodingKey { case accessToken, refreshToken, clientID, region }
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy:CodingKeys.self)
+        accessToken = try values.decode(String.self, forKey:.accessToken)
+        refreshToken = try values.decode(String.self, forKey:.refreshToken)
+        clientID = try values.decode(String.self, forKey:.clientID)
+        region = try values.decodeIfPresent(CareLinkRegion.self, forKey:.region) ?? .eu
+    }
+    static func response(_ object: [String: Any], clientID: String, region: CareLinkRegion = .eu, previous: Tokens? = nil) throws -> Tokens {
         guard let access = object["access_token"] as? String, !access.isEmpty,
               let refresh = object["refresh_token"] as? String ?? previous?.refreshToken, !refresh.isEmpty else { throw CareLinkError.authentication }
-        return Tokens(accessToken:access, refreshToken:refresh, clientID:clientID)
+        return Tokens(accessToken:access, refreshToken:refresh, clientID:clientID, region:previous?.region ?? region)
     }
     var claims: [String: Any]? {
         let parts = accessToken.split(separator:".")
@@ -87,13 +133,14 @@ struct Tokens: Codable {
 }
 
 struct OAuthMetadata {
+    let region: CareLinkRegion
     let clientID: String
     let scope: String
     let audience: String
     let redirect: URL
-    init(_ object: [String: Any]) throws {
+    init(_ object: [String: Any], region: CareLinkRegion = .eu) throws {
         guard let server = object["server"] as? [String:Any],
-              server["hostname"] as? String == "carelink-login.minimed.eu",
+              server["hostname"] as? String == region.endpoints.loginHost,
               server["port"] as? Int == 443,
               server["prefix"] as? String == "",
               let endpoints = object["system_endpoints"] as? [String:Any],
@@ -107,7 +154,7 @@ struct OAuthMetadata {
               let redirect = URL(string:redirectString),
               redirect.scheme == "com.medtronic.carepartner", redirect.path == "/sso",
               redirect.host == nil, redirect.query == nil, redirect.fragment == nil else { throw CareLinkError.configuration }
-        self.clientID = id; self.scope = scope; self.audience = audience; self.redirect = redirect
+        self.region = region; self.clientID = id; self.scope = scope; self.audience = audience; self.redirect = redirect
     }
 }
 
@@ -122,7 +169,7 @@ enum OAuthFlow {
     }
     static func challenge(_ verifier: String) -> String { base64URL(Data(SHA256.hash(data:Data(verifier.utf8)))) }
     static func authorizationURL(metadata: OAuthMetadata, state: String, verifier: String) -> URL {
-        var url = URLComponents(url:Endpoints.authorize, resolvingAgainstBaseURL:false)!
+        var url = URLComponents(url:metadata.region.endpoints.authorize, resolvingAgainstBaseURL:false)!
         url.queryItems = ["client_id":metadata.clientID, "response_type":"code", "scope":metadata.scope,
             "redirect_uri":metadata.redirect.absoluteString, "audience":metadata.audience, "state":state,
             "code_challenge":challenge(verifier), "code_challenge_method":"S256"].map { URLQueryItem(name:$0.key, value:$0.value) }
