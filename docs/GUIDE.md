@@ -463,20 +463,35 @@ To build a DMG locally: `python3 tools/build-menubar.py --release && ./tools/mak
 
 ### Website
 
-`site/index.html` is a self-contained landing page for end users, with download, features, privacy,
-install steps and FAQ, in English and European Portuguese. English is in the HTML (shown without
-JavaScript and to search engines); a small script swaps in Portuguese from its `pt` dictionary, keyed
-by `data-i18n` (inner HTML), `data-i18n-alt` and `data-i18n-content` attributes. The language comes
-from `?lang=pt|en`, then the visitor's PT/EN choice in the navigation bar (saved in `localStorage`),
-then the browser's preferred languages; anything else falls back to English. Clicking PT or EN
-also writes `?lang=` into the address (keeping any `#section`), so the URL in the address bar can be
-shared and opens in that language. New text needs a
-`data-i18n` key and a `pt` entry. Screenshots carry `data-i18n-src` with their Portuguese version
-(`*-pt.png`). `.github/workflows/pages.yml` publishes it to `https://tixastronauta.github.io/carelink-menubar/` whenever `site/` or
-`assets/` change on `main`. The workflow copies the icon and screenshots from `assets/`.
+The landing page for end users (download, features, privacy, install steps, FAQ) is built by
+`tools/build-site.py` from a template, `site/index.html`, and one dictionary per language,
+`site/i18n/en.json` and `site/i18n/pt.json` (European Portuguese, informal "tu" as in the app).
+Every text is a `{{key}}` placeholder; the build fails if a key is missing, unused or present in only
+one language, and `tests/test_site.py` checks the output.
+
+- **One static page per language:** `/` (English) and `/pt/` (Portuguese). Link previews and search
+  engines do not run JavaScript, so each page carries its own title, description and image.
+- **Shareable links:** `/pt/` always opens in Portuguese and `/?lang=en` in English. The PT/EN links
+  in the navigation bar go to those addresses (keeping any `#section`) and save the choice in
+  `localStorage`.
+- **Automatic language:** only `/` redirects, to `/pt/`, when the address has the older
+  `?lang=pt`, the visitor chose PT before, or (with no saved choice) the browser prefers Portuguese.
+  `/pt/?lang=en` goes back to `/?lang=en`.
+- **Sharing and SEO tags:** canonical URL, `hreflang` alternates (en, pt, x-default), Open Graph and
+  Twitter card tags with an absolute 1200×630 image per language (`social-card.png`,
+  `social-card-pt.png`), `theme-color`, touch icon, and `SoftwareApplication` JSON-LD. The build also
+  writes `robots.txt` and `sitemap.xml` with both pages. `meta.*` strings may not contain quotes or
+  angle brackets, because they go into attributes and JSON-LD verbatim.
+- **Images:** `tools/make-screenshots.sh` renders every screenshot and the social card in English
+  and in Portuguese (`*-pt.png`), from synthetic data. The Portuguese page uses the `-pt` files.
+
+`.github/workflows/pages.yml` runs the build and publishes it to
+`https://tixastronauta.github.io/carelink-menubar/` whenever `site/`, `assets/` or the build script
+change on `main`.
 
 - **One-time setup:** repository Settings → Pages → Source: **GitHub Actions**.
 - **Plan limitation:** GitHub Pages needs a paid plan while the repository is private; it is free
   once the repository is public.
-- **Local preview:** copy `site/` together with `assets/AppIcon-1024.png` and `assets/screenshots`
-  into one folder and open `index.html`.
+- **Local preview:** `python3 tools/build-site.py` writes `build/site`. Serve it under the same
+  sub-path as Pages, so the redirects behave the same: copy it to `<folder>/carelink-menubar`, run
+  `python3 -m http.server` in `<folder>` and open `http://localhost:8000/carelink-menubar/`.

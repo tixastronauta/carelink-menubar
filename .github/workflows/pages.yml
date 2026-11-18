@@ -1,4 +1,5 @@
-# Publishes the website in site/ (plus the icon and screenshots from assets/) to GitHub Pages.
+# Builds the website (tools/build-site.py: / in English, /pt/ in Portuguese, plus the icon and
+# screenshots from assets/) and publishes it to GitHub Pages.
 # One-time setup: repository Settings → Pages → Source: "GitHub Actions".
 # Note: Pages for private repositories needs a paid GitHub plan; it works for free once public.
 name: Website
@@ -6,7 +7,7 @@ name: Website
 on:
   push:
     branches: [main]
-    paths: ["site/**", "assets/**", ".github/workflows/pages.yml"]
+    paths: ["site/**", "assets/**", "tools/build-site.py", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
@@ -26,12 +27,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Assemble site
-        run: |
-          mkdir -p _site/assets
-          cp -R site/. _site/
-          cp assets/AppIcon-1024.png _site/assets/
-          cp -R assets/screenshots _site/assets/
+      - name: Build site
+        run: python3 tools/build-site.py _site
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

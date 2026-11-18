@@ -1,14 +1,43 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{page.lang}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title data-i18n="meta.title">CareLink Menubar: your glucose in the Mac menu bar</title>
-  <meta name="description" data-i18n-content="meta.description" content="See your MiniMed CareLink glucose, trend and time in range right in the Mac menu bar and on your desktop. Free, private and read-only.">
-  <meta property="og:title" content="CareLink Menubar">
-  <meta property="og:description" content="Your glucose, one glance away. Free for macOS.">
-  <meta property="og:image" content="assets/screenshots/panel-dark.png">
-  <link rel="icon" href="assets/AppIcon-1024.png">
+  <title>{{meta.title}}</title>
+  <meta name="description" content="{{meta.description}}">
+  <link rel="canonical" href="{{page.url}}">
+  <link rel="alternate" hreflang="en" href="{{site.url}}">
+  <link rel="alternate" hreflang="pt" href="{{site.url}}pt/">
+  <link rel="alternate" hreflang="x-default" href="{{site.url}}">
+  <meta name="theme-color" content="#148591">
+  <link rel="icon" type="image/png" href="{{root}}assets/AppIcon-1024.png">
+  <link rel="apple-touch-icon" href="{{root}}assets/AppIcon-1024.png">
+  <!-- Link previews (crawlers do not run JavaScript, so every value here is static per language). -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="CareLink Menubar">
+  <meta property="og:url" content="{{page.url}}">
+  <meta property="og:title" content="{{meta.shareTitle}}">
+  <meta property="og:description" content="{{meta.description}}">
+  <meta property="og:locale" content="{{page.locale}}">
+  <meta property="og:locale:alternate" content="{{page.altLocale}}">
+  <meta property="og:image" content="{{site.url}}assets/screenshots/social-card{{shot}}.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="{{meta.imageAlt}}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{meta.shareTitle}}">
+  <meta name="twitter:description" content="{{meta.description}}">
+  <meta name="twitter:image" content="{{site.url}}assets/screenshots/social-card{{shot}}.png">
+  <meta name="twitter:image:alt" content="{{meta.imageAlt}}">
+  <script type="application/ld+json">
+  {"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "CareLink Menubar",
+   "description": "{{meta.description}}", "url": "{{page.url}}", "inLanguage": "{{page.lang}}",
+   "applicationCategory": "HealthApplication", "operatingSystem": "macOS 14 or later",
+   "offers": {"@type": "Offer", "price": "0", "priceCurrency": "EUR"},
+   "downloadUrl": "https://github.com/tixastronauta/carelink-menubar/releases/latest/download/CareLink-Menubar.dmg",
+   "image": "{{site.url}}assets/screenshots/social-card{{shot}}.png",
+   "license": "https://www.gnu.org/licenses/agpl-3.0.html"}
+  </script>
   <style>
     :root {
       --teal: #148591;
@@ -112,281 +141,182 @@
     footer { border-top: 1px solid var(--border); padding: 34px 0 48px; color: var(--muted); font-size: 14px; }
     footer .wrap { display: grid; gap: 10px; }
     .lang { display: flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; font-size: 13px; }
-    .lang button { border: 0; background: transparent; color: var(--muted); padding: 4px 10px; font: inherit; cursor: pointer; }
-    .lang button[aria-pressed="true"] { background: var(--teal); color: #fff; }
+    .lang a { color: var(--muted); padding: 4px 10px; }
+    .lang a:hover { text-decoration: none; color: var(--text); }
+    .lang a[aria-current="page"] { background: var(--teal); color: #fff; }
     @media (max-width: 640px) { nav .wrap { gap: 14px; } nav .links a:not(.gh) { display: none; } section { padding: 56px 0; } }
   </style>
 </head>
 <body>
   <nav>
     <div class="wrap">
-      <a class="brand" href="#"><img src="assets/AppIcon-1024.png" alt=""> CareLink Menubar</a>
+      <a class="brand" href="./"><img src="{{root}}assets/AppIcon-1024.png" alt=""> CareLink Menubar</a>
       <div class="links">
-        <a href="#features" data-i18n="nav.features">Features</a>
-        <a href="#privacy" data-i18n="nav.privacy">Privacy</a>
-        <a href="#install" data-i18n="nav.install">Install</a>
-        <a href="#faq" data-i18n="nav.faq">FAQ</a>
+        <a href="#features">{{nav.features}}</a>
+        <a href="#privacy">{{nav.privacy}}</a>
+        <a href="#install">{{nav.install}}</a>
+        <a href="#faq">{{nav.faq}}</a>
         <a class="gh" href="https://github.com/tixastronauta/carelink-menubar">GitHub</a>
       </div>
       <div class="lang" role="group" aria-label="Language">
-        <button type="button" data-lang="pt" aria-pressed="false" title="Português">PT</button>
-        <button type="button" data-lang="en" aria-pressed="true" title="English">EN</button>
+        <a href="{{root}}pt/" hreflang="pt" lang="pt-PT" data-lang="pt" title="Português" {{page.ptCurrent}}>PT</a>
+        <a href="{{root}}?lang=en" hreflang="en" lang="en" data-lang="en" title="English" {{page.enCurrent}}>EN</a>
       </div>
     </div>
   </nav>
 
   <header class="hero">
     <div class="wrap">
-      <img class="icon" src="assets/AppIcon-1024.png" alt="CareLink Menubar icon" data-i18n-alt="hero.iconAlt">
-      <h1 data-i18n="hero.title">Your glucose,<br>one glance away.</h1>
-      <p class="lead" data-i18n="hero.lead">CareLink Menubar puts your MiniMed CareLink readings in the Mac menu bar and on
-        your desktop, so you can stay focused on your work without reaching for your phone.</p>
+      <img class="icon" src="{{root}}assets/AppIcon-1024.png" alt="{{hero.iconAlt}}">
+      <h1>{{hero.title}}</h1>
+      <p class="lead">{{hero.lead}}</p>
       <div class="cta">
         <a class="btn btn-primary" href="https://github.com/tixastronauta/carelink-menubar/releases/latest/download/CareLink-Menubar.dmg">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
-          <span data-i18n="cta.download">Download for Mac</span>
+          <span>{{cta.download}}</span>
         </a>
-        <a class="btn btn-secondary" href="#install" data-i18n="cta.howto">How to install</a>
+        <a class="btn btn-secondary" href="#install">{{cta.howto}}</a>
       </div>
-      <p class="fineprint" data-i18n="hero.fineprint">Free and open source · macOS 14 or later · Apple Silicon and Intel</p>
-      <div class="hero-shot"><img src="assets/screenshots/panel-dark.png" data-i18n-src="assets/screenshots/panel-dark-pt.png" alt="The CareLink Menubar panel with glucose, time in range, consumables and a 24-hour chart" data-i18n-alt="hero.shotAlt"></div>
+      <p class="fineprint">{{hero.fineprint}}</p>
+      <div class="hero-shot"><img src="{{root}}assets/screenshots/panel-dark{{shot}}.png" alt="{{hero.shotAlt}}"></div>
       <div class="trust">
-        <span class="pill" data-i18n="trust.readonly"><b>Read-only</b>: never controls your pump</span>
-        <span class="pill" data-i18n="trust.private"><b>Private</b>: your data stays on your Mac</span>
-        <span class="pill" data-i18n="trust.free"><b>Free</b>: open source, no account fees</span>
+        <span class="pill">{{trust.readonly}}</span>
+        <span class="pill">{{trust.private}}</span>
+        <span class="pill">{{trust.free}}</span>
       </div>
     </div>
   </header>
 
   <section id="features">
     <div class="wrap">
-      <h2 data-i18n="features.title">Everything you check, without the checking</h2>
-      <p class="section-lead" data-i18n="features.lead">The numbers you look at most, always visible, with gentle colour cues when something needs your attention.</p>
+      <h2>{{features.title}}</h2>
+      <p class="section-lead">{{features.lead}}</p>
       <div class="grid">
-        <div class="card"><div class="emoji">👀</div><h3 data-i18n="f1.title">Always in view</h3>
-          <p data-i18n="f1.text">Your current glucose and trend arrow live in the menu bar, with a small chart of the last three hours. Orange or red when you're out of range.</p></div>
-        <div class="card"><div class="emoji">🎯</div><h3 data-i18n="f2.title">Time in range at a glance</h3>
-          <p data-i18n="f2.text">See your last 24 hours in range, below and above, plus your average, variability and GMI, in one clear card.</p></div>
-        <div class="card"><div class="emoji">⏳</div><h3 data-i18n="f3.title">Know when to change</h3>
-          <p data-i18n="f3.text">Reservoir, pump battery, infusion set and sensor time left. They turn orange and then red as the change gets close.</p></div>
-        <div class="card"><div class="emoji">🧩</div><h3 data-i18n="f4.title">Desktop widgets</h3>
-          <p data-i18n="f4.text">Three widget sizes for your desktop, with your real recent trend drawn behind the number.</p></div>
-        <div class="card"><div class="emoji">📸</div><h3 data-i18n="f5.title">Share in one click</h3>
-          <p data-i18n="f5.text">Copy a clean picture of your current status and paste it into a message to your care team or family.</p></div>
-        <div class="card"><div class="emoji">🔔</div><h3 data-i18n="f6.title">Helpful reminders</h3>
-          <p data-i18n="f6.text">Optional notifications when your sensor or infusion set is ending, or when new readings stop arriving.</p></div>
+        <div class="card"><div class="emoji">👀</div><h3>{{f1.title}}</h3>
+          <p>{{f1.text}}</p></div>
+        <div class="card"><div class="emoji">🎯</div><h3>{{f2.title}}</h3>
+          <p>{{f2.text}}</p></div>
+        <div class="card"><div class="emoji">⏳</div><h3>{{f3.title}}</h3>
+          <p>{{f3.text}}</p></div>
+        <div class="card"><div class="emoji">🧩</div><h3>{{f4.title}}</h3>
+          <p>{{f4.text}}</p></div>
+        <div class="card"><div class="emoji">📸</div><h3>{{f5.title}}</h3>
+          <p>{{f5.text}}</p></div>
+        <div class="card"><div class="emoji">🔔</div><h3>{{f6.title}}</h3>
+          <p>{{f6.text}}</p></div>
       </div>
     </div>
   </section>
 
   <section id="widgets">
     <div class="wrap">
-      <h2 data-i18n="widgets.title">Beautiful on your desktop</h2>
-      <p class="section-lead" data-i18n="widgets.lead">Pick the size that fits your workflow. Click any widget to open the full panel.</p>
+      <h2>{{widgets.title}}</h2>
+      <p class="section-lead">{{widgets.lead}}</p>
       <div class="widgets">
         <div class="stack">
-          <img src="assets/screenshots/widget-small.png" data-i18n-src="assets/screenshots/widget-small-pt.png" width="200" alt="Small widget" data-i18n-alt="widgets.small">
-          <img src="assets/screenshots/widget-medium.png" data-i18n-src="assets/screenshots/widget-medium-pt.png" width="392" alt="Medium widget" data-i18n-alt="widgets.medium">
+          <img src="{{root}}assets/screenshots/widget-small{{shot}}.png" width="200" alt="{{widgets.small}}">
+          <img src="{{root}}assets/screenshots/widget-medium{{shot}}.png" width="392" alt="{{widgets.medium}}">
         </div>
-        <img src="assets/screenshots/widget-large.png" data-i18n-src="assets/screenshots/widget-large-pt.png" width="392" alt="Large widget" data-i18n-alt="widgets.large">
+        <img src="{{root}}assets/screenshots/widget-large{{shot}}.png" width="392" alt="{{widgets.large}}">
       </div>
     </div>
   </section>
 
   <section id="privacy">
     <div class="wrap">
-      <h2 data-i18n="privacy.title">Your data stays with you</h2>
-      <p class="section-lead" data-i18n="privacy.lead">Built for people who care about their health data as much as we do.</p>
+      <h2>{{privacy.title}}</h2>
+      <p class="section-lead">{{privacy.lead}}</p>
       <div class="privacy">
-        <div class="card"><h3 data-i18n="p1.title">🔒 Official sign-in</h3><p data-i18n="p1.text">You sign in on MiniMed's own CareLink page. The app never sees or stores your password.</p></div>
-        <div class="card"><h3 data-i18n="p2.title">🔑 Keychain only</h3><p data-i18n="p2.text">Your session is kept in the macOS Keychain on your Mac, not in files.</p></div>
-        <div class="card"><h3 data-i18n="p3.title">🚫 No tracking</h3><p data-i18n="p3.text">No analytics, no ads and no servers of ours. The app talks only to CareLink.</p></div>
-        <div class="card"><h3 data-i18n="p4.title">👁️ Read-only by design</h3><p data-i18n="p4.text">It can only read what CareLink already shows you. It cannot change your therapy or your pump.</p></div>
+        <div class="card"><h3>{{p1.title}}</h3><p>{{p1.text}}</p></div>
+        <div class="card"><h3>{{p2.title}}</h3><p>{{p2.text}}</p></div>
+        <div class="card"><h3>{{p3.title}}</h3><p>{{p3.text}}</p></div>
+        <div class="card"><h3>{{p4.title}}</h3><p>{{p4.text}}</p></div>
       </div>
     </div>
   </section>
 
   <section id="install">
     <div class="wrap">
-      <h2 data-i18n="install.title">Install in three steps</h2>
-      <p class="section-lead" data-i18n="install.lead">It takes about a minute. The extra step on first launch is normal for free apps that are not distributed through Apple.</p>
+      <h2>{{install.title}}</h2>
+      <p class="section-lead">{{install.lead}}</p>
       <div class="steps">
-        <div class="card step"><h3 data-i18n="s1.title">Download and drag</h3>
-          <p data-i18n="s1.text">Open <a href="https://github.com/tixastronauta/carelink-menubar/releases/latest/download/CareLink-Menubar.dmg">CareLink-Menubar.dmg</a> and drag the app onto the Applications folder.</p></div>
-        <div class="card step"><h3 data-i18n="s2.title">Open it once</h3>
-          <p data-i18n="s2.text">Open CareLink Menubar from Applications. macOS says it can't verify the app. Click <b>Done</b>.</p></div>
-        <div class="card step"><h3 data-i18n="s3.title">Allow it</h3>
-          <p data-i18n="s3.text">Go to <b>System Settings → Privacy &amp; Security</b>, scroll down and click <b>Open Anyway</b>. Done: the app appears in your menu bar.</p></div>
+        <div class="card step"><h3>{{s1.title}}</h3>
+          <p>{{s1.text}}</p></div>
+        <div class="card step"><h3>{{s2.title}}</h3>
+          <p>{{s2.text}}</p></div>
+        <div class="card step"><h3>{{s3.title}}</h3>
+          <p>{{s3.text}}</p></div>
       </div>
-      <div class="note" data-i18n="install.note"><b>Why the warning?</b> Apple charges developers a yearly fee to "notarize" apps. CareLink Menubar is free and its code is public, so you can see exactly what it does. You only approve it once for each new version.</div>
+      <div class="note">{{install.note}}</div>
     </div>
   </section>
 
   <section id="faq">
     <div class="wrap">
-      <h2 data-i18n="faq.title">Questions</h2>
-      <p class="section-lead" data-i18n="faq.lead">Short answers to what people usually ask.</p>
-      <details><summary data-i18n="q1">Is this an official MiniMed app?</summary>
-        <p data-i18n="a1">No. CareLink Menubar is an independent, unofficial app and is not affiliated with or endorsed by MiniMed (formerly Medtronic Diabetes). It reads the same data you can see in CareLink.</p></details>
-      <details><summary data-i18n="q2">Can it change my pump or my insulin?</summary>
-        <p data-i18n="a2">No. It is read-only by design: it never sends commands to your pump and never changes your therapy.</p></details>
-      <details><summary data-i18n="q3">Does it replace my pump or phone alarms?</summary>
-        <p data-i18n="a3">No. Keep relying on your pump, sensor and the MiniMed app and their alarms. Always confirm values in the official app before making treatment decisions.</p></details>
-      <details><summary data-i18n="q4">Which accounts and pumps work?</summary>
-        <p data-i18n="a4">It works with CareLink accounts in both regions: Europe and other countries (which covers every country except the United States, including Canada, Australia and Latin America) and the United States. Accounts can be a patient, or a care partner with one linked patient. It was developed and tested with a MiniMed Flex on a European account; US accounts and other pumps are supported but haven't been verified with real data yet.</p></details>
-      <details><summary data-i18n="q5">What do I need?</summary>
-        <p data-i18n="a5">A Mac with macOS 14 Sonoma or later (Apple Silicon or Intel) and your CareLink login.</p></details>
-      <details><summary data-i18n="q6">Is it really free?</summary>
-        <p data-i18n="a6">Yes. It's open source under the GNU AGPL-3.0 license, with no subscriptions and no in-app purchases.</p></details>
-      <details><summary data-i18n="q7">Where is my data stored?</summary>
-        <p data-i18n="a7">Only on your Mac. On first launch you're asked for consent. Readings for the widget are stored locally, and you can withdraw consent at any time to delete them and sign out.</p></details>
-      <details><summary data-i18n="q8">Is the app in Portuguese?</summary>
-        <p data-i18n="a8">Yes. The app is in English and European Portuguese. By default it follows your Mac's language, and you can switch it any time in Settings → General.</p></details>
+      <h2>{{faq.title}}</h2>
+      <p class="section-lead">{{faq.lead}}</p>
+      <details><summary>{{q1}}</summary>
+        <p>{{a1}}</p></details>
+      <details><summary>{{q2}}</summary>
+        <p>{{a2}}</p></details>
+      <details><summary>{{q3}}</summary>
+        <p>{{a3}}</p></details>
+      <details><summary>{{q4}}</summary>
+        <p>{{a4}}</p></details>
+      <details><summary>{{q5}}</summary>
+        <p>{{a5}}</p></details>
+      <details><summary>{{q6}}</summary>
+        <p>{{a6}}</p></details>
+      <details><summary>{{q7}}</summary>
+        <p>{{a7}}</p></details>
+      <details><summary>{{q8}}</summary>
+        <p>{{a8}}</p></details>
     </div>
   </section>
 
   <section class="final">
     <div class="wrap">
-      <h2 data-i18n="final.title">Ready when you are</h2>
-      <p class="section-lead" data-i18n="final.lead">Free for macOS 14 or later.</p>
+      <h2>{{final.title}}</h2>
+      <p class="section-lead">{{final.lead}}</p>
       <div class="cta">
-        <a class="btn btn-primary" href="https://github.com/tixastronauta/carelink-menubar/releases/latest/download/CareLink-Menubar.dmg" data-i18n="cta.download">Download for Mac</a>
-        <a class="btn btn-secondary" href="https://github.com/tixastronauta/carelink-menubar" data-i18n="cta.github">View on GitHub</a>
+        <a class="btn btn-primary" href="https://github.com/tixastronauta/carelink-menubar/releases/latest/download/CareLink-Menubar.dmg">{{cta.download}}</a>
+        <a class="btn btn-secondary" href="https://github.com/tixastronauta/carelink-menubar">{{cta.github}}</a>
       </div>
     </div>
   </section>
 
   <footer>
     <div class="wrap">
-      <div data-i18n="footer.disclaimer">CareLink Menubar is unofficial and not affiliated with, endorsed by or supported by MiniMed (formerly Medtronic Diabetes). It is not a medical device. Screenshots show example data.</div>
-      <div data-i18n="footer.legal">CareLink, MiniMed, SmartGuard and Medtronic are trademarks of their respective owners. Free software under the <a href="https://github.com/tixastronauta/carelink-menubar/blob/main/LICENSE">GNU AGPL-3.0</a>. Source code on <a href="https://github.com/tixastronauta/carelink-menubar">GitHub</a>.</div>
+      <div>{{footer.disclaimer}}</div>
+      <div>{{footer.legal}}</div>
     </div>
   </footer>
 
   <script>
-    // English is in the HTML (no-JS and search engines). Portuguese is applied here. Choice order:
-    // ?lang=pt|en (shareable links), then the visitor's saved choice, then the browser's preferred
-    // languages. Clicking PT/EN saves the choice and writes it into the address as ?lang=.
+    // Each language is a static page: / (English) and /pt/ (Portuguese). Only the English page
+    // redirects, so a shared /pt/ link always opens in Portuguese and /?lang=en in English.
+    // On /: ?lang=pt (older links), a saved PT choice, or a Portuguese browser go to /pt/.
     (function () {
-      var DMG = 'https://github.com/tixastronauta/carelink-menubar/releases/latest/download/CareLink-Menubar.dmg';
-      var GH = 'https://github.com/tixastronauta/carelink-menubar';
-      var pt = {
-        'meta.title': 'CareLink Menubar: a tua glicemia na barra de menus do Mac',
-        'meta.description': 'Vê a glicemia, a tendência e o tempo na faixa do MiniMed CareLink na barra de menus do Mac e na secretária. Grátis, privada e só de leitura.',
-        'nav.features': 'Funcionalidades', 'nav.privacy': 'Privacidade', 'nav.install': 'Instalar', 'nav.faq': 'Perguntas',
-        'hero.iconAlt': 'Ícone do CareLink Menubar',
-        'hero.title': 'A tua glicemia,<br>à distância de um olhar.',
-        'hero.lead': 'O CareLink Menubar mostra as tuas leituras do MiniMed CareLink na barra de menus do Mac e na secretária, para te manteres concentrado no trabalho sem pegar no telemóvel.',
-        'cta.download': 'Descarregar para Mac', 'cta.howto': 'Como instalar', 'cta.github': 'Ver no GitHub',
-        'hero.fineprint': 'Grátis e de código aberto · macOS 14 ou posterior · Apple Silicon e Intel',
-        'hero.shotAlt': 'O painel do CareLink Menubar com a glicemia, o tempo na faixa, os consumíveis e um gráfico de 24 horas',
-        'trust.readonly': '<b>Só de leitura</b>: nunca controla a tua bomba',
-        'trust.private': '<b>Privada</b>: os teus dados ficam no teu Mac',
-        'trust.free': '<b>Grátis</b>: código aberto, sem mensalidades',
-        'features.title': 'Tudo o que costumas ver, sem teres de ir ver',
-        'features.lead': 'Os números que mais consultas, sempre visíveis, com cores discretas quando algo precisa da tua atenção.',
-        'f1.title': 'Sempre à vista',
-        'f1.text': 'A glicemia atual e a seta de tendência ficam na barra de menus, com um pequeno gráfico das últimas três horas. Laranja ou vermelho quando estás fora da faixa.',
-        'f2.title': 'Tempo na faixa num relance',
-        'f2.text': 'Vê as últimas 24 horas na faixa, abaixo e acima, e ainda a média, a variabilidade e o GMI, num só cartão.',
-        'f3.title': 'Sabe quando trocar',
-        'f3.text': 'Reservatório, bateria da bomba, conjunto de infusão e tempo restante do sensor. Passam a laranja e depois a vermelho quando a troca se aproxima.',
-        'f4.title': 'Widgets na secretária',
-        'f4.text': 'Três tamanhos de widget para a secretária, com a tua tendência recente desenhada por trás do valor.',
-        'f5.title': 'Partilha com um clique',
-        'f5.text': 'Copia uma imagem limpa do teu estado atual e cola-a numa mensagem para a equipa de saúde ou a família.',
-        'f6.title': 'Lembretes úteis',
-        'f6.text': 'Notificações opcionais quando o sensor ou o conjunto de infusão estão a terminar, ou quando deixam de chegar leituras novas.',
-        'widgets.title': 'Bonito na secretária',
-        'widgets.lead': 'Escolhe o tamanho que te dá mais jeito. Um clique em qualquer widget abre o painel completo.',
-        'widgets.small': 'Widget pequeno', 'widgets.medium': 'Widget médio', 'widgets.large': 'Widget grande',
-        'privacy.title': 'Os teus dados ficam contigo',
-        'privacy.lead': 'Feita para quem se preocupa com os seus dados de saúde tanto quanto nós.',
-        'p1.title': '🔒 Login oficial',
-        'p1.text': 'Entras na própria página do CareLink da MiniMed. A app nunca vê nem guarda a tua palavra-passe.',
-        'p2.title': '🔑 Só no Porta-chaves',
-        'p2.text': 'A tua sessão fica no Porta-chaves do macOS, no teu Mac, e não em ficheiros.',
-        'p3.title': '🚫 Sem rastreio',
-        'p3.text': 'Sem estatísticas, sem anúncios e sem servidores nossos. A app só fala com o CareLink.',
-        'p4.title': '👁️ Só de leitura, de raiz',
-        'p4.text': 'Só consegue ler o que o CareLink já te mostra. Não pode alterar a tua terapia nem a tua bomba.',
-        'install.title': 'Instala em três passos',
-        'install.lead': 'Demora cerca de um minuto. O passo extra na primeira abertura é normal em apps gratuitas que não são distribuídas pela Apple.',
-        's1.title': 'Descarrega e arrasta',
-        's1.text': 'Abre o <a href="' + DMG + '">CareLink-Menubar.dmg</a> e arrasta a app para a pasta Aplicações.',
-        's2.title': 'Abre uma vez',
-        's2.text': 'Abre o CareLink Menubar a partir das Aplicações. O macOS diz que não consegue verificar a app. Clica em <b>OK</b>.',
-        's3.title': 'Autoriza',
-        's3.text': 'Vai a <b>Definições do Sistema → Privacidade e segurança</b>, desce até ao fim e clica em <b>Abrir mesmo assim</b>. Pronto: a app aparece na barra de menus.',
-        'install.note': '<b>Porquê o aviso?</b> A Apple cobra aos programadores uma taxa anual para "notarizar" apps. O CareLink Menubar é grátis e o código é público, por isso podes ver exatamente o que faz. Só tens de autorizar uma vez por cada versão nova.',
-        'faq.title': 'Perguntas', 'faq.lead': 'Respostas curtas ao que costumam perguntar.',
-        'q1': 'É uma app oficial da MiniMed?',
-        'a1': 'Não. O CareLink Menubar é uma app independente e não oficial, sem ligação à MiniMed (antiga Medtronic Diabetes) nem aprovada por ela. Lê os mesmos dados que vês no CareLink.',
-        'q2': 'Pode alterar a minha bomba ou a minha insulina?',
-        'a2': 'Não. É só de leitura, de raiz: nunca envia comandos à bomba e nunca altera a tua terapia.',
-        'q3': 'Substitui os alarmes da bomba ou do telemóvel?',
-        'a3': 'Não. Continua a confiar na bomba, no sensor, na app MiniMed e nos respetivos alarmes. Confirma sempre os valores na app oficial antes de decidir um tratamento.',
-        'q4': 'Que contas e bombas funcionam?',
-        'a4': 'Funciona com contas CareLink das duas regiões: Europa e outros países (todos os países exceto os Estados Unidos, incluindo Brasil, Canadá e Austrália) e Estados Unidos. A conta pode ser de paciente ou de cuidador com um paciente associado. Foi desenvolvida e testada com uma MiniMed Flex numa conta europeia; as contas dos EUA e outras bombas são suportadas, mas ainda não foram verificadas com dados reais.',
-        'q5': 'Do que preciso?',
-        'a5': 'Um Mac com macOS 14 Sonoma ou posterior (Apple Silicon ou Intel) e o teu login do CareLink.',
-        'q6': 'É mesmo grátis?',
-        'a6': 'Sim. É de código aberto, com licença GNU AGPL-3.0, sem subscrições e sem compras dentro da app.',
-        'q7': 'Onde ficam os meus dados?',
-        'a7': 'Só no teu Mac. Na primeira abertura é-te pedido consentimento. As leituras do widget ficam guardadas localmente, e podes retirar o consentimento a qualquer momento para as apagar e terminar sessão.',
-        'q8': 'A app está em português?',
-        'a8': 'Sim. A app está em português europeu e em inglês. Por omissão segue o idioma do Mac, e podes mudá-lo quando quiseres em Definições → Geral.',
-        'final.title': 'Quando quiseres', 'final.lead': 'Grátis para macOS 14 ou posterior.',
-        'footer.disclaimer': 'O CareLink Menubar não é oficial e não tem ligação à MiniMed (antiga Medtronic Diabetes), nem é aprovado ou suportado por ela. Não é um dispositivo médico. As imagens mostram dados de exemplo.',
-        'footer.legal': 'CareLink, MiniMed, SmartGuard e Medtronic são marcas dos respetivos donos. Software livre com licença <a href="' + GH + '/blob/main/LICENSE">GNU AGPL-3.0</a>. Código-fonte no <a href="' + GH + '">GitHub</a>.'
-      };
-      var en = {};
-      function each(attr, fn) { Array.prototype.forEach.call(document.querySelectorAll('[' + attr + ']'), fn); }
-      // Remember the English originals so switching back needs no second dictionary.
-      each('data-i18n', function (el) { en[el.getAttribute('data-i18n')] = el.innerHTML; });
-      each('data-i18n-alt', function (el) { en[el.getAttribute('data-i18n-alt')] = el.alt; });
-      each('data-i18n-content', function (el) { en[el.getAttribute('data-i18n-content')] = el.content; });
-      // Screenshots: data-i18n-src holds the Portuguese image; keep the English src to switch back.
-      each('data-i18n-src', function (el) { el.setAttribute('data-src-en', el.getAttribute('src')); });
-      function apply(lang) {
-        var dict = lang === 'pt' ? pt : en;
-        each('data-i18n', function (el) { var v = dict[el.getAttribute('data-i18n')]; if (v != null) el.innerHTML = v; });
-        each('data-i18n-alt', function (el) { var v = dict[el.getAttribute('data-i18n-alt')]; if (v != null) el.alt = v; });
-        each('data-i18n-content', function (el) { var v = dict[el.getAttribute('data-i18n-content')]; if (v != null) el.content = v; });
-        each('data-i18n-src', function (el) {
-          el.setAttribute('src', lang === 'pt' ? el.getAttribute('data-i18n-src') : el.getAttribute('data-src-en'));
-        });
-        document.documentElement.lang = lang === 'pt' ? 'pt-PT' : 'en';
-        each('data-lang', function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-lang') === lang)); });
-      }
+      var page = '{{page.code}}';
       function saved() { try { return localStorage.getItem('lang'); } catch (e) { return null; } }
-      function detect() {
-        var param = new URLSearchParams(location.search).get('lang');
-        if (param === 'pt' || param === 'en') return param;
-        var stored = saved();
-        if (stored === 'pt' || stored === 'en') return stored;
-        var langs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'en'];
+      var param = new URLSearchParams(location.search).get('lang');
+      if (page === 'en' && param !== 'en') {
+        var stored = saved(), langs = navigator.languages || [navigator.language || ''], pt = false;
         for (var i = 0; i < langs.length; i++) {
           var code = String(langs[i]).toLowerCase();
-          if (code.indexOf('pt') === 0) return 'pt';
-          if (code.indexOf('en') === 0) return 'en';
+          if (code.indexOf('pt') === 0) { pt = true; break; }
+          if (code.indexOf('en') === 0) break;
         }
-        return 'en';
+        if (param === 'pt' || stored === 'pt' || (!stored && pt)) { location.replace('pt/' + location.hash); return; }
       }
-      each('data-lang', function (b) {
-        b.addEventListener('click', function () {
-          var lang = b.getAttribute('data-lang');
-          try { localStorage.setItem('lang', lang); } catch (e) {}
-          apply(lang);
-          // Put the choice in the address so the current URL can be shared in this language.
-          try {
-            var url = new URL(location.href);
-            url.searchParams.set('lang', lang);
-            history.replaceState(null, '', url.pathname + url.search + url.hash);
-          } catch (e) {}
+      if (page === 'pt' && param === 'en') { location.replace('../?lang=en' + location.hash); return; }
+      // The PT/EN links save the choice and keep the current section.
+      Array.prototype.forEach.call(document.querySelectorAll('[data-lang]'), function (link) {
+        link.addEventListener('click', function () {
+          try { localStorage.setItem('lang', link.getAttribute('data-lang')); } catch (e) {}
+          if (location.hash) link.href = link.href.split('#')[0] + location.hash;
         });
       });
-      apply(detect());
     })();
   </script>
 </body>

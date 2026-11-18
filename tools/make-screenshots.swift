@@ -5,9 +5,9 @@ import AppKit
 import SwiftUI
 import WidgetKit
 
-@MainActor func save(_ view: some View, _ path: String) {
+@MainActor func save(_ view: some View, _ path: String, scale: CGFloat = 2) {
     let renderer = ImageRenderer(content: view)
-    renderer.scale = 2
+    renderer.scale = scale
     let rep = NSBitmapImageRep(data: renderer.nsImage!.tiffRepresentation!)!
     try! rep.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: path))
 }
@@ -55,6 +55,32 @@ func value(hoursAgo h: Double) -> Double {
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .padding(20).environment(\.colorScheme, scheme), "\(out)/\(name)\(suffix).png")
         }
+
+        // Social preview card (Open Graph, 1200×630) for the website, one per language.
+        let card: [String: (String, String)] = [
+            "en": ("Your glucose,\none glance away.", "MiniMed CareLink in your Mac menu bar.\nFree · Read-only · Private"),
+            "pt": ("A tua glicemia,\nà distância de um olhar.", "O MiniMed CareLink na barra de\nmenus do Mac.\nGrátis · Só de leitura · Privada")]
+        let icon = NSImage(contentsOfFile: "assets/AppIcon-1024.png")!
+        save(ZStack(alignment: .topLeading) {
+            LinearGradient(colors: [Color(red: 0.05, green: 0.36, blue: 0.41), Color(red: 0.03, green: 0.16, blue: 0.19)],
+                           startPoint: .topLeading, endPoint: .bottomTrailing)
+            VStack(alignment: .leading, spacing: 22) {
+                Image(nsImage: icon).resizable().frame(width: 112, height: 112)
+                Text(card[code]!.0).font(.system(size: 52, weight: .bold)).foregroundStyle(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(card[code]!.1).font(.system(size: 26, weight: .medium)).foregroundStyle(.white.opacity(0.82))
+                    .lineSpacing(6).fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 64).frame(width: 680, height: 630, alignment: .leading)
+            // The panel runs off the bottom edge: the top (value, time in range) is what matters.
+            CareLinkPopover(store: store, prefs: prefs, exporting: true).content
+                .background(Color(nsColor: .windowBackgroundColor))
+                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .shadow(color: .black.opacity(0.45), radius: 30, y: 16)
+                .environment(\.colorScheme, .dark)
+                .offset(x: 700, y: 70)
+        }
+        .frame(width: 1200, height: 630).clipped(), "\(out)/social-card\(suffix).png", scale: 1)
 
         let summary = WidgetSummary(glucoseText: String(format: "%.0f", current), unit: "mg/dL", trendSymbol: "↑",
                                     readingDate: points.last!.0, range: current > 180 ? "high" : "in", updated: now,
