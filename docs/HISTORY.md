@@ -120,3 +120,8 @@ Built in close iteration with daily use. Highlights:
   the app only reads your data and keeps it on this Mac.
 - **Tidier header:** buttons that cannot be used right now are hidden instead of greyed out, and a
   new power button quits the app.
+
+## 0.3.6: 3-hour chart
+
+- **3h chart range:** besides 6h, 12h and 24h, the chart can now show the last 3 hours, for a
+  closer look at what is happening right now.

@@ -76,8 +76,7 @@ User and developer reference for CareLink Menubar 0.3. For a quick overview see 
   - old reading ("Last reading 17min ago"), missing reading time, or time ahead of the Mac's clock;
   - CareLink errors.
 - **Chart:**
-  - 6h, 12h or 24h, with the target band and dots for out-of-range readings. Development builds
-    also offer a 3h range (see [Development](#development)) while it is being evaluated.
+  - 3h, 6h, 12h or 24h, with the target band and dots for out-of-range readings.
   - Bolus (filled drop), SmartGuard auto correction (small drop) and meal (fork and knife) markers.
     Hovering a marker shows the amount and time.
 - **Diagnostics badge:** an orange "Diagnostics" label in the header while diagnostic mode is on.
