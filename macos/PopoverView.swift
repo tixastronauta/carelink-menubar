@@ -472,7 +472,9 @@ struct CareLinkPopover: View {
                     Text(tr("Glicemia").uppercased(with: L10n.locale))
                         .font(.caption.weight(.semibold)).tracking(0.6).foregroundStyle(.secondary)
                     Spacer()
-                    ForEach([6, 12, 24], id: \.self) { period in
+                    // The 3h range is still being evaluated: show it only in the development
+                    // build so it can be tested without reaching the installed release.
+                    ForEach(AppVariant.current.isDev ? [3, 6, 12, 24] : [6, 12, 24], id: \.self) { period in
                         periodChip(period)
                     }
                 }
