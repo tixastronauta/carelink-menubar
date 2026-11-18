@@ -468,7 +468,9 @@ install steps and FAQ, in English and European Portuguese. English is in the HTM
 JavaScript and to search engines); a small script swaps in Portuguese from its `pt` dictionary, keyed
 by `data-i18n` (inner HTML), `data-i18n-alt` and `data-i18n-content` attributes. The language comes
 from `?lang=pt|en`, then the visitor's PT/EN choice in the navigation bar (saved in `localStorage`),
-then the browser's preferred languages; anything else falls back to English. New text needs a
+then the browser's preferred languages; anything else falls back to English. Clicking PT or EN
+also writes `?lang=` into the address (keeping any `#section`), so the URL in the address bar can be
+shared and opens in that language. New text needs a
 `data-i18n` key and a `pt` entry. `.github/workflows/pages.yml` publishes it to `https://tixastronauta.github.io/carelink-menubar/` whenever `site/` or
 `assets/` change on `main`. The workflow copies the icon and screenshots from `assets/`.
 

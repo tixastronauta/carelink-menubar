@@ -265,7 +265,8 @@
 
   <script>
     // English is in the HTML (no-JS and search engines). Portuguese is applied here. Choice order:
-    // ?lang=pt|en, then the visitor's saved choice, then the browser's preferred languages.
+    // ?lang=pt|en (shareable links), then the visitor's saved choice, then the browser's preferred
+    // languages. Clicking PT/EN saves the choice and writes it into the address as ?lang=.
     (function () {
       var DMG = 'https://github.com/tixastronauta/carelink-menubar/releases/latest/download/CareLink-Menubar.dmg';
       var GH = 'https://github.com/tixastronauta/carelink-menubar';
@@ -372,6 +373,12 @@
           var lang = b.getAttribute('data-lang');
           try { localStorage.setItem('lang', lang); } catch (e) {}
           apply(lang);
+          // Put the choice in the address so the current URL can be shared in this language.
+          try {
+            var url = new URL(location.href);
+            url.searchParams.set('lang', lang);
+            history.replaceState(null, '', url.pathname + url.search + url.hash);
+          } catch (e) {}
         });
       });
       apply(detect());
