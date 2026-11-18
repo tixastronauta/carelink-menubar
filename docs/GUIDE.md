@@ -464,7 +464,12 @@ To build a DMG locally: `python3 tools/build-menubar.py --release && ./tools/mak
 ### Website
 
 `site/index.html` is a self-contained landing page for end users, with download, features, privacy,
-install steps and FAQ. `.github/workflows/pages.yml` publishes it to `https://tixastronauta.github.io/carelink-menubar/` whenever `site/` or
+install steps and FAQ, in English and European Portuguese. English is in the HTML (shown without
+JavaScript and to search engines); a small script swaps in Portuguese from its `pt` dictionary, keyed
+by `data-i18n` (inner HTML), `data-i18n-alt` and `data-i18n-content` attributes. The language comes
+from `?lang=pt|en`, then the visitor's PT/EN choice in the navigation bar (saved in `localStorage`),
+then the browser's preferred languages; anything else falls back to English. New text needs a
+`data-i18n` key and a `pt` entry. `.github/workflows/pages.yml` publishes it to `https://tixastronauta.github.io/carelink-menubar/` whenever `site/` or
 `assets/` change on `main`. The workflow copies the icon and screenshots from `assets/`.
 
 - **One-time setup:** repository Settings → Pages → Source: **GitHub Actions**.
